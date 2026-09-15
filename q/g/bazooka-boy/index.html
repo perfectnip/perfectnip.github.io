@@ -1,0 +1,73 @@
+<!doctype html>
+
+<head>
+    <base href="https://cdn.jsdelivr.net/gh/perfectnip/youtube-playables@main/bazooka-boy/">
+    <script src="https://cdn.jsdelivr.net/gh/perfectnip/youtube-playables@main/ytgame.js" nonce="dEkCONaa23D47oC-g3LdhA"></script>
+    <title></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+    <style>
+        body {
+            overflow-y: none;
+            margin: 0;
+            width: 100%;
+            position: fixed;
+            background: #ff4e21;
+        }
+
+        #loading {
+            width: 100vw;
+            height: 100vh;
+            background: #ff4e21;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            margin: 0 auto;
+        }
+
+        @media (orientation: landscape) {
+            #loading {
+                width: 50vw;
+            }
+        }
+
+        @media (orientation: portrait) {
+            #loading {
+                width: 100vw;
+            }
+        }
+
+        #loading_logo {
+            text-align: center;
+            width: 50%;
+            height: fit-content;
+        }
+
+        #loading_bar {
+            width: 50%;
+            height: 11px;
+            background: rgba(0, 0, 0, 0.25);
+            margin-top: 100px;
+            display: flex;
+        }
+
+        #loading_bar_progress {
+            width: 0%;
+            height: 11px;
+        }
+
+        #loading_text {
+            color: white;
+        }
+    </style>
+</head>
+
+<body><canvas id="canvas" style="position: absolute; top: 0; left: 0; display: none;"></canvas>
+    <div id="loading"><img id="loading_logo" src="assets/2d/loading/Loading_Logo.png" alt="Super Sonic Logo">
+        <div id="loading_bar"><img id="loading_bar_progress" src="assets/2d/loading/Loading_Bar_Full.png" alt="Loading_Bar_Full"></div>
+        <h3 id="loading_text">Loading...</h3>
+    </div>
+    <div id="console-log" style="position: absolute; top: 0; left: 0"></div>
+    <script defer="defer" src="vendor.f0ea44553244713d397b.js" nonce="dEkCONaa23D47oC-g3LdhA"></script>
+    <script defer="defer" src="main.5889165dfcd7922a0793.js" nonce="dEkCONaa23D47oC-g3LdhA"></script>
+</body>

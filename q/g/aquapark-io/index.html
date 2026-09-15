@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+  <base href="https://cdn.jsdelivr.net/gh/perfectnip/youtube-playables@main/aquapark-io/">
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+  <title>YT Game Wrapper WebGL Template</title>
+  <link rel="stylesheet" href="TemplateData/style.css" nonce="gAKBBT4aLfaZvJiS8jIdUw">
+  <script src="https://cdn.jsdelivr.net/gh/perfectnip/youtube-playables@main/ytgame.js" nonce="gAKBBT4aLfaZvJiS8jIdUw">// Load YT Game API code</script>
+</head>
+
+<body>
+  <div id="unity-container" class="unity-desktop">
+    <canvas id="unity-canvas" width=100% height=100% tabindex="-1"></canvas>
+    <div id="unity-loading-bar" class="unity-preload-1">
+      <div id="filler"></div>
+      <div id="playBtn" class="btnAppear"></div>
+      <div id="carroutxt"></div>
+      <div id="unity-progress-bar-empty">
+        <div id="unity-progress-bar-full"></div>
+      </div>
+    </div>
+    <div id="unity-warning"> </div>
+  </div>
+
+  <script src="unarchiver.min.js" nonce="gAKBBT4aLfaZvJiS8jIdUw">// used for decompression if zip files are used</script>
+  <script src="main.js" nonce="gAKBBT4aLfaZvJiS8jIdUw"> // Logic for Unity contianer</script>
+</body>
+</html>

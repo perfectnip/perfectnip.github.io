@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<base href="https://cdn.jsdelivr.net/gh/perfectnip/youtube-playables@main/dan-the-man/">
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, minimal-ui, shrink-to-fit=no">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<!-- The above 4 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+
+	<title>DanTheMan-Defold 1.0</title>
+	<script src="https://cdn.jsdelivr.net/gh/perfectnip/youtube-playables@main/ytgame.js" nonce="uu4HoixcMCw2JacszkoG6g"></script>
+  	<script nonce="uu4HoixcMCw2JacszkoG6g"> ytgame?.game.firstFrameReady(); </script>
+	<style type='text/css'>
+	/* Disable user selection to avoid strange bug in Chrome on Windows:
+	* Selecting a text outside the canvas, then clicking+draging would
+	* drag the selected text but block mouse down/up events to the engine.
+	*/
+	body {
+	
+		position: fixed; /* Prevent overscroll */
+	
+		margin:0;
+		padding:0;
+	}
+
+	.canvas-app-container {
+		width: 100%;
+		height: 100%;
+		position: absolute;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+
+	.canvas-app-container:-webkit-full-screen {
+		/* Auto width and height in Safari/Chrome fullscreen. */
+		width: auto;
+		height: auto;
+	}
+
+	#canvas {
+		outline: none;
+		border: 0;
+		width: 100%;
+		vertical-align: bottom;
+	}
+
+	#canvas-container {
+		position: relative;
+	}
+
+	canvas:focus, canvas:active {
+		outline: none;
+		border: 0;
+		ie-dummy: expression(this.hideFocus=true);
+		-moz-outline-style: none;
+	}
+
+	body, div {
+		-webkit-tap-highlight-color: rgba(0,0,0,0);
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		-khtml-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+	}
+
+		.canvas-app-progress {
+		position: absolute;
+		background-color: #d1dbeb;
+		height: 6px;
+		margin-top: -6px;
+		width: 100%;
+	}
+
+	.canvas-app-progress-bar {
+		font-size: 12px;
+		height: 6px;
+		color: rgb(255, 255, 255);
+		background-color: #1a72eb;
+		text-align: center;
+		line-height: 20px;
+		transition: transform 1s ease;
+		transform-origin: left;
+		transform: scaleX(1.0);
+	}
+
+
+	.link, .button {
+		font-family: sans-serif;
+		font-size: 14px;
+		font-weight: normal;
+		font-style: normal;
+		font-stretch: normal;
+		line-height: normal;
+		letter-spacing: 0px;
+		padding-top: 12px;
+	}
+
+	.buttons-background {
+		background-color: #ffffff;
+		width: 100%;
+		height: 42px;
+	}
+
+	body {
+		background-color: #ffffff;
+	}
+
+	.canvas-app-container {
+		background: rgba(250,252,255,1);
+		background: -moz-linear-gradient(-45deg, rgba(250,252,255,1) 0%, rgba(250,252,255,1) 50%, rgba(245,249,255,1) 50%, rgba(245,249,255,1) 100%);
+		background: -webkit-gradient(left top, right bottom, color-stop(0%, rgba(250,252,255,1)), color-stop(50%, rgba(250,252,255,1)), color-stop(50%, rgba(245,249,255,1)), color-stop(100%, rgba(245,249,255,1)));
+		background: -webkit-linear-gradient(-45deg, rgba(250,252,255,1) 0%, rgba(250,252,255,1) 50%, rgba(245,249,255,1) 50%, rgba(245,249,255,1) 100%);
+		background: -o-linear-gradient(-45deg, rgba(250,252,255,1) 0%, rgba(250,252,255,1) 50%, rgba(245,249,255,1) 50%, rgba(245,249,255,1) 100%);
+		background: -ms-linear-gradient(-45deg, rgba(250,252,255,1) 0%, rgba(250,252,255,1) 50%, rgba(245,249,255,1) 50%, rgba(245,249,255,1) 100%);
+		background: linear-gradient(135deg, rgba(250,252,255,1) 0%, rgba(250,252,255,1) 50%, rgba(245,249,255,1) 50%, rgba(245,249,255,1) 100%);
+		filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fafcff', endColorstr='#f5f9ff', GradientType=1 );
+	}
+
+	.canvas-app-canvas {
+		background-position: center center;
+        background-size: contain;
+        background-repeat: no-repeat;
+
+		background-image: url("Denda_black.png");
+
+
+	}
+	</style>
+
+</head>
+
+<body>
+
+	<script nonce="uu4HoixcMCw2JacszkoG6g">
+	(function () {
+	// Keep original constructors
+	const _AudioContext = window.AudioContext || window.webkitAudioContext;
+	if (!_AudioContext) return; // No Web Audio available
+
+	// Global registry
+	const __ALL_AUDIO_CONTEXTS__ = [];
+	window.__getAudioContexts = () => __ALL_AUDIO_CONTEXTS__.slice();
+
+	// Wrap the constructor
+	const WrappedAudioContext = function(...args) {
+		const ctx = new _AudioContext(...args);
+		__ALL_AUDIO_CONTEXTS__.push(ctx);
+		return ctx;
+	};
+	// Copy prototype so instanceof checks still work
+	WrappedAudioContext.prototype = _AudioContext.prototype;
+	// Replace globals
+	window.AudioContext = WrappedAudioContext;
+	if (window.webkitAudioContext) window.webkitAudioContext = WrappedAudioContext;
+
+	// Mute/unmute helper
+	window.muteGame = async function (on) {
+		const list = __ALL_AUDIO_CONTEXTS__;
+		// suspend/resume in parallel; ignore errors from already-suspended etc.
+		await Promise.all(list.map(ctx => on ? ctx.suspend() : ctx.resume().catch(()=>{})));
+	};
+	})();
+	</script>
+
+	<div id="app-container" class="canvas-app-container">
+		<div id="webgl-not-supported" style="display: none; margin: 3em;">
+			<h1>WebGL not supported ⚠️</h1>
+			<p>WebGL is not supported by your browser - visit <a href="https://get.webgl.org/">https://get.webgl.org/</a> to learn more.</p>
+		</div>
+		<div id="canvas-container" class="canvas-app-canvas-container">
+			<canvas id="canvas" class="canvas-app-canvas" tabindex="1" width="960" height="640"></canvas>
+		</div>
+		<div class="buttons-background">
+
+
+		</div>
+	</div>
+	<!-- -->
+	<script nonce="uu4HoixcMCw2JacszkoG6g">
+		// Fallback to make sure globalThis is available when running in an old
+		// browser (available from Chome 71)
+		// https://github.com/defold/defold/issues/10503
+		if (typeof globalThis === 'undefined') {
+			window.globalThis = window;
+		}
+	</script>
+	<script id='engine-loader' type='text/javascript' src="dmloader.js" nonce="uu4HoixcMCw2JacszkoG6g"></script>
+	<script id='engine-setup' type='text/javascript' nonce="uu4HoixcMCw2JacszkoG6g">
+        Module.persistentStorage = false;
+		// From here you can configure game startup parameters via the CUSTOM_PARAMETERS object,
+		// override ProgressView to create your own loader. See dmloader.js for more details.
+	</script>
+	<script id='engine-start' type='text/javascript' nonce="uu4HoixcMCw2JacszkoG6g">
+		var runningFromFileWarning = document.getElementById("running-from-file-warning");
+		EngineLoader.load("canvas", "DanTheManDefold");
+	</script>
+</body>
+</html>

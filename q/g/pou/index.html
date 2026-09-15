@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base href="https://cdn.jsdelivr.net/gh/perfectnip/youtube-playables@main/pou/">
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1.0 minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui, shrink-to-fit=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Pou</title>
+    <link rel="icon" type="image/png" href="assets/icon.png">
+    <!-- For apple devices -->
+    <link rel="apple-touch-icon" type="image/png" href="assets/icon.png" />
+    <link rel="stylesheet" href="assets/css/app.css" type="text/css" nonce="nEsvHewDKSKQZPWExNde-A" />
+	<!-- YT PLAYABLES -->
+	<script src="https://cdn.jsdelivr.net/gh/perfectnip/youtube-playables@main/ytgame.js" nonce="nEsvHewDKSKQZPWExNde-A"></script>
+	
+	<!-- #FASTLIB# -->
+	<script defer src="fastLib/_importer.js" data-fast="fastLib/fastHeader.js" data-fast-options="{'checkbrowser':false}" type="text/javascript" nonce="nEsvHewDKSKQZPWExNde-A"></script>
+</head>
+<body>
+    <div id="content"> </div>
+    <div id="orientation"></div>
+	
+	<!-- start-fast-library -->
+    <script type="text/javascript" nonce="nEsvHewDKSKQZPWExNde-A">
+		document.addEventListener('fastloaded', function(e)
+		{
+			window.fast.gameReady = function()
+			{
+				window.fast.goGame({
+					prepare:prepareGame,
+					body:["vendor/phaser.min.js", "vendor/box2d-p3.min.js", "pou.min.js"],
+					init:function(){ window.gameStart(), window.fastActivePopup(), ytgame.game.firstFrameReady() },
+					enterfs:function(){ },
+					exitfs:function(){ },
+					afterinfs:function(){ window.fastCheckMiniGameForMiui(true) }
+				});
+				console.log("inside [gameReady] -> "+window.fast.lang);
+			}
+			window.fast.stageElements(window.fast.gameReady, {fsbehind:true, nostats:true});
+		}, false);
+    </script>
+	<!-- end-fast-library -->
+	
+	<script nonce="nEsvHewDKSKQZPWExNde-A">
+		async function prepareGame()
+		{
+			//check audio
+			window.fast.gameAudio = ytgame.system.isAudioEnabled();
+			//check lang
+			await ytgame.system.getLanguage().then(function(lang)
+			{
+				//strip the subtag and default to english if not supported
+				lang = lang.split('-')[0];
+				lang = (window.fast.info.languages.indexOf(lang)>-1) ? lang : window.fast.info.languages[0];
+				console.log('set lang to '+lang);
+				window.fast.lang = lang;
+				return new Promise((resolve, reject) => { resolve() });
+			});
+		}
+		//onchangeaudio
+		ytgame.system.onAudioEnabledChange(function(isAudioEnabled)
+		{
+			if(window.fast) window.fast.gameAudio = isAudioEnabled;
+			if(typeof window.fastEnableAudio==="function") window.fastEnableAudio(isAudioEnabled);
+		});
+	</script>
+</body>
+</html>

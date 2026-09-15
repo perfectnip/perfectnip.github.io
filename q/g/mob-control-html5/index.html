@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base href="https://cdn.jsdelivr.net/gh/perfectnip/youtube-playables@af7a20f1ed51753e07b394f8680eaa5699d1fc2c/mob-control-html5/">
+    <title>Mob control</title>
+
+    <meta http-equiv="Content-Type" content="text/html, charset=utf-8"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-touch-fullscreen" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="msapplication-tap-highlight" content="no"/>
+    <meta name="MobileOptimized" content="960"/>
+   <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, initial-scale=1.0, user-scalable=no, minimal-ui"/>
+
+    <link rel="stylesheet" type="text/css" href="style/index.css" nonce="-aHhUqwMte4nFjjog56n9A"/>
+
+    <!-- <script src="https://html5.api.gamedistribution.com/libs/gd/api.js"></script>
+    <script src="./VOODOO-H5SDK.gd.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/gh/perfectnip/youtube-playables@main/ytgame.js" nonce="-aHhUqwMte4nFjjog56n9A"></script>
+    <script src="./VOODOO-H5SDK.youtube.js" nonce="-aHhUqwMte4nFjjog56n9A"></script>
+    <script src="game.js" nonce="-aHhUqwMte4nFjjog56n9A"></script>
+
+</head>
+
+
+<body oncontextmenu="return false;">
+    <div id="game"></div>
+    <script nonce="-aHhUqwMte4nFjjog56n9A">
+        window.addEventListener('wheel', e=>{
+            e.preventDefault();
+        }, {passive: false});
+    </script>
+</body>
+</html>
