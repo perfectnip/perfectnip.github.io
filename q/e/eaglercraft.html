@@ -1215,7 +1215,7 @@
             border-radius: 8px;
             padding: 30px;
             width: 100%;
-            max-width: 400px;
+            max-width: 860px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             text-align: center;
         }
@@ -1293,6 +1293,39 @@
             font-weight: bold;
         }
         
+
+        .gx-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: left;
+        }
+        .gx-section h2 {
+            color: #333;
+            font-size: 17px;
+            margin-bottom: 4px;
+        }
+        .gxgrp {
+            color: #6a2fd6;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin: 16px 0 8px;
+        }
+        .gxbtn {
+            display: inline-block;
+            margin: 4px;
+            padding: 8px 12px;
+            background: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background .2s;
+        }
+        .gxbtn:hover { background: #3d8b40; }
         footer {
             margin-top: 30px;
             color: #777;
@@ -1317,8 +1350,8 @@
                 <option value="r1-8-8-t2.html">Eaglercraft 1.8 Touchscreen (Pocket Mobile)</option>
                 <option value="r1-8-8-w.html">Eaglercraft 1.8 WASM Version</option>
                 <option value="r1-12-2.html">Eaglercraft 1.12.2</option>
-                <option value="r1-12-2.html">Eaglercraft 1.12.2 WASM Version</option>
-                <option value="hacks/fushsiax-ghost.html">Fushsiax Ghost Hack</option>
+                <option value="r1-12-2-w.html">Eaglercraft 1.12.2 WASM Version</option>
+                <option value="hacks/fuchsiax-ghost.html">Fushsiax Ghost Hack</option>
                 <option value="hacks/kerosene.html">Kerosene Hack</option>
                 <option value="hacks/dragonx.html">DragonX Hack</option>
                 <option value="hacks/nebula.html">Nebula Hack</option>
@@ -1331,6 +1364,114 @@
         <button id="launch-btn" class="launch-button" disabled>LAUNCH</button>
         
         <div id="status" class="status waiting">Select a version</div>
+        <div class="gx-section">
+<h2>GX LAUNCHER — ALL VERSIONS (web client builds)</h2>
+  <h3 class="gxgrp">Release</h3>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.0/index.html','_blank')">1.0</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.1/index.html','_blank')">1.1</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.12.2/index.html','_blank')">1.12.2 (u3)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.12.2-wasm/index.html','_blank')">1.12.2 WASM (u3)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.13.2/index.html','_blank')">1.13.2 (u1)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.13.2-wasm/index.html','_blank')">1.13.2 WASM (u1)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.14.4/index.html','_blank')">1.14.4 (u1)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.14.4-wasm/index.html','_blank')">1.14.4 WASM (u1)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.16.5/index.html','_blank')">1.16.5 (u3)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.16.5-wasm/index.html','_blank')">1.16.5 WASM (u3)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.17.1-wasm/index.html','_blank')">1.17.1 WASM (u1)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.2.3/index.html','_blank')">1.2.3</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.2.3-wasm/index.html','_blank')">1.2.3 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.2.5/index.html','_blank')">1.2.5</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.2.5-wasm/index.html','_blank')">1.2.5 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.20.6-wasm/index.html','_blank')">1.20.6 WASM (u0)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.21.11-wasm/index.html','_blank')">1.21.11 WASM (u1)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.3.2-wasm/index.html','_blank')">1.3.2 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.4.7/index.html','_blank')">1.4.7</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.4.7-wasm/index.html','_blank')">1.4.7 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.5.2/index.html','_blank')">1.5.2 (sp2.01)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.6.4/index.html','_blank')">1.6.4</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.7.10/index.html','_blank')">1.7.10 (u0)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.7.10-wasm/index.html','_blank')">1.7.10 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.8.8/index.html','_blank')">1.8.8 (u54)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/1.8.8-wasm/index.html','_blank')">1.8.8 WASM (u54)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/26.1.2-wasm/index.html','_blank')">26.1.2 WASM (u1)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/26.2-wasm/index.html','_blank')">26.2 WASM (u0)</button>
+  <h3 class="gxgrp">Beta</h3>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.0/index.html','_blank')">Beta 1.0</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.0.2/index.html','_blank')">Beta 1.0.2 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.1/index.html','_blank')">Beta 1.1</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.2/index.html','_blank')">Beta 1.2</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.3/index.html','_blank')">Beta 1.3</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.3-wasm/index.html','_blank')">Beta 1.3 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.4/index.html','_blank')">Beta 1.4</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.5/index.html','_blank')">Beta 1.5</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.6.4/index.html','_blank')">Beta 1.6.4</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.7.3/index.html','_blank')">Beta 1.7.3</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.8.1/index.html','_blank')">Beta 1.8.1</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.8.1-wasm/index.html','_blank')">Beta 1.8.1 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.9/index.html','_blank')">Beta 1.9 Pre 5</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/beta-1.9-wasm/index.html','_blank')">Beta 1.9 Pre 5 WASM</button>
+  <h3 class="gxgrp">Alpha / Pre-Classic</h3>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/4k/index.html','_blank')">4K</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/alpha-1.0.1_01/index.html','_blank')">Alpha 1.0.1_01</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/alpha-1.0.16_02-wasm/index.html','_blank')">Alpha 1.0.16_02 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/alpha-1.0.4/index.html','_blank')">Alpha 1.0.4</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/alpha-1.0.6_03/index.html','_blank')">Alpha 1.0.6_03</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/alpha-1.1.2_01/index.html','_blank')">Alpha 1.1.2_01</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/alpha-1.2.6/index.html','_blank')">Alpha 1.2.6</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.11a-wasm/index.html','_blank')">Classic 0.0.11a WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.12a-03-wasm/index.html','_blank')">Classic 0.0.12a_03 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.13a-03-wasm/index.html','_blank')">Classic 0.0.13a_03 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.14a-08-wasm/index.html','_blank')">Classic 0.0.14a_08 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.15a-wasm/index.html','_blank')">Classic 0.0.15a WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.16a-02-wasm/index.html','_blank')">Classic 0.0.16a_02 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.17a-wasm/index.html','_blank')">Classic 0.0.17a WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.18a-02-wasm/index.html','_blank')">Classic 0.0.18a_02 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.19a-06-wasm/index.html','_blank')">Classic 0.0.19a_06 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.20a-02-wasm/index.html','_blank')">Classic 0.0.20a_02 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.21a-wasm/index.html','_blank')">Classic 0.0.21a WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.22a-05-wasm/index.html','_blank')">Classic 0.0.22a_05 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.23a-01-wasm/index.html','_blank')">Classic 0.0.23a_01 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.24a-03-wasm/index.html','_blank')">Classic 0.0.24a_03 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.0.25a-05-wasm/index.html','_blank')">Classic 0.0.25a_05 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/classic-0.3.0-wasm/index.html','_blank')">Classic 0.3.0 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/indev/index.html','_blank')">Indev</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/indev-20100219-wasm/index.html','_blank')">Indev 20100219</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/indev-20100223-wasm/index.html','_blank')">Indev 20100223</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/infdev-wasm/index.html','_blank')">Infdev WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/pre-classic-rd-131655-wasm/index.html','_blank')">Pre-Classic RD-131655 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/pre-classic-rd-132211-wasm/index.html','_blank')">Pre-Classic RD-132211 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/pre-classic-rd-132328-wasm/index.html','_blank')">Pre-Classic RD-132328 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/pre-classic-rd-160052-wasm/index.html','_blank')">Pre-Classic RD-160052 WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/pre-classic-rd-161348-wasm/index.html','_blank')">Pre-Classic RD-161348 WASM</button>
+  <h3 class="gxgrp">Custom Clients</h3>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Aero%20Client/index.html','_blank')">Areo Client (1.12.2-u2)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Astra%20Client/index.html','_blank')">Astra Client (1.8.8-u53)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Astra%20Client%202-1.8.8/index.html','_blank')">Astra Client 2 (1.8.8-u53)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Eaglerforge/index.html','_blank')">Eaglerforge (1.8.8-u31)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/EB%20Client/index.html','_blank')">EB Client OG(1.8.8 u53)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/EB%20Client%201.14.4/index.html','_blank')">EB Client (1.14.4 u1)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/EB%20Client%201.8.8/index.html','_blank')">EB Client (1.8.8 u53)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Eclipse%20Client/index.html','_blank')">Eclipse Client (1.8.8-u53)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/efi-1.12.2/index.html','_blank')">EFI (1.12.2-u2)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/efi-1.8.8/index.html','_blank')">EFI (1.8.8-u53)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Forge%201.6.4/index.html','_blank')">Forge 1.6.4</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/GX-Client/index.html','_blank')">GX-Client (1.8.8-u53)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Huzzium%20Client/index.html','_blank')">Huzzium Client (1.8.8 u53)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Kozmo%20Client/index.html','_blank')">Kozmo Client (1.12.2 u2)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Larp%20Client%201.12.2/index.html','_blank')">Larp CLient 1.12.2</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Larp%20Client%201.14.4/index.html','_blank')">Larp CLient 1.14.4</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Modern%20Client/index.html','_blank')">Modern Client (1.12.2-u2) WASM</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Myven%20Client/index.html','_blank')">Myven Client (1.8.8-u53)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Pixel%20Client/index.html','_blank')">Pixel Client (1.12.2-u2)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Precision%20Client/index.html','_blank')">Precision Client (1.8.8 u53)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Resent%20Client/index.html','_blank')">Resent Client (1.8.8-u53)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Shadow%20Network/index.html','_blank')">Shadow Network</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/The%20Broken%20Script%201.8.8/index.html','_blank')">The Broken Script 1.8.8</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Tuff%20Client/index.html','_blank')">Tuff Client (1.12.2-u2)</button>
+  <button class="gxbtn" onclick="window.open('https://raw.githubusercontent.com/perfectnip/gx-launcher/main/game/Tuff%20Client%20Beta/index.html','_blank')">Tuff Client Beta 1.12.2</button>
+
+  
+        </div>
     </div>
 
     <script>
