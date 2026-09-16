@@ -52,6 +52,21 @@
     return 'https://deepseek-proxy.ikunbeautiful.workers.dev';
   })();
 
+  /* Chat-only backend. The DeepSeek chat was moved off the Cloudflare Worker
+   * (which hit its free-plan request limit) onto the jchat server, which holds
+   * DEEPSEEK_KEY server-side. Billing/subscription still uses WORKER_URL.
+   * Override via <meta name="jqrg-aichat-chat-url"> or window.__JqrgAiChatUrl. */
+  var CHAT_URL = (function () {
+    try {
+      if (typeof window.__JqrgAiChatUrl === 'string' && window.__JqrgAiChatUrl) {
+        return window.__JqrgAiChatUrl.replace(/\/+$/, '');
+      }
+      var meta = document.querySelector && document.querySelector('meta[name="jqrg-aichat-chat-url"]');
+      if (meta && meta.content) return meta.content.replace(/\/+$/, '');
+    } catch (_) {}
+    return 'https://discord.jimmyqrg.com/api/ai';
+  })();
+
   /* ====================================================================
    * Subscription / paywall (file uploads)
    *
@@ -2266,7 +2281,7 @@
    * ==================================================================*/
   function streamChat(opts, onChunk, onDone, onError) {
     var ctrl = window.AbortController ? new AbortController() : null;
-    var url = WORKER_URL + '/v1/chat';
+    var url = CHAT_URL + '/chat';
     var headers = { 'Content-Type': 'application/json' };
     var tok = getAuthToken();
     if (tok) headers['Authorization'] = 'Bearer ' + tok;
