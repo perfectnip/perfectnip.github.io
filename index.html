@@ -297,7 +297,14 @@ html,body{
   min-width:170px;box-shadow:0 8px 30px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);
   animation:fadeInUp .2s ease;
 }
-.search-filter-menu.open{display:block}
+.search-filter-menu.open{display:flex;flex-direction:column}
+.search-filter-list{overflow-y:auto;max-height:min(45vh,340px);min-width:170px;padding:6px 0;scrollbar-width:thin}
+.search-filter-footer{position:sticky;bottom:0;display:flex;gap:8px;padding:8px 12px;border-top:1px solid rgba(255,255,255,.12);background:rgba(18,10,28,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:0 0 12px 12px}
+.search-filter-footer button{flex:1;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;border:none;transition:background .2s,filter .2s}
+.filter-cancel-btn{background:rgba(255,255,255,.1);color:rgba(255,255,255,.85)}
+.filter-cancel-btn:hover{background:rgba(255,255,255,.18)}
+.filter-confirm-btn{background:var(--accent-purple);color:#fff}
+.filter-confirm-btn:hover{filter:brightness(1.15)}
 .filter-check-row{
   display:flex;align-items:center;gap:10px;
   padding:8px 16px;cursor:pointer;color:rgba(255,255,255,.75);
@@ -4463,6 +4470,7 @@ function _fG(){_rG();updateUrl()}
 var activeTagFilters=[];
 var _TF={"featured":_('RmVhdHVyZWQ='),"touch":_('VG91Y2ggRnJpZW5kbHk='),"jqrg":_('SmltbXlRcmc='),"multiplayer":_('TXVsdGlwbGF5ZXI='),"single-player":_('U2luZ2xlIFBsYXllcg=='),"online":_('T25saW5l'),"offline":_('T2ZmbGluZQ=='),"adventure":_('QWR2ZW50dXJl'),"arcade":_('QXJjYWRl'),"fighting":_('RmlnaHRpbmc='),"horror":_('SG9ycm9y'),"idle":_('SWRsZS9DbGlja2Vy'),"io":_('Lmlv'),"parkour":_('UGFya291cg=='),"platformer":_('UGxhdGZvcm1lcg=='),"puzzle":_('UHV6emxl'),"racing":_('UmFjaW5n'),"rhythm":_('Umh5dGht'),"rpg":_('UlBH'),"runner":_('UnVubmVy'),"sandbox":_('U2FuZGJveA=='),"shooter":_('U2hvb3Rlcg=='),"simulator":_('U2ltdWxhdG9y'),"sports":_('U3BvcnRz'),"strategy":_('U3RyYXRlZ3k='),"survival":_('U3Vydml2YWw='),"tower-defense":_('VG93ZXIgRGVmZW5zZQ==')};
 
+var pendingTagFilters=[];
 function toggleSearchFilter(e){
           e.stopPropagation();
   var menu=document.getElementById('search-filter-menu');
@@ -4470,27 +4478,38 @@ function toggleSearchFilter(e){
   menu.classList.toggle('open');
   var btn=menu.parentElement.querySelector('.search-filter-btn');
   btn.classList.toggle('active',!isOpen||activeTagFilters.length>0);
-  if(!isOpen) renderSearchFilterMenu();
+  if(!isOpen){ pendingTagFilters=activeTagFilters.slice(); renderSearchFilterMenu(); }
 }
 function renderSearchFilterMenu(){
   var menu=document.getElementById('search-filter-menu');
-  var html='';
+  var html='<div class="search-filter-list">';
   var keys=Object.keys(_TF);
   for(var i=0;i<keys.length;i++){
-    var checked=activeTagFilters.indexOf(keys[i])!==-1;
+    var checked=pendingTagFilters.indexOf(keys[i])!==-1;
     html+='<div class="filter-check-row'+(checked?' selected':'')+'" onclick="toggleTagFilter(\''+keys[i]+'\')">';
     html+='<span>'+_t(_TF[keys[i]])+'</span>';
     html+='<div class="filter-toggle'+(checked?' active':'')+'"></div></div>';
   }
+  html+='</div><div class="search-filter-footer"><button type="button" class="filter-cancel-btn" onclick="cancelTagFilters()">Cancel</button><button type="button" class="filter-confirm-btn" onclick="confirmTagFilters()">Confirm</button></div>';
   menu.innerHTML=html;
 }
 function toggleTagFilter(tag){
-  var idx=activeTagFilters.indexOf(tag);
-  if(idx===-1) activeTagFilters.push(tag);
-  else activeTagFilters.splice(idx,1);
-  document.querySelector('.search-filter-btn').classList.toggle('active',activeTagFilters.length>0);
+  var idx=pendingTagFilters.indexOf(tag);
+  if(idx===-1) pendingTagFilters.push(tag);
+  else pendingTagFilters.splice(idx,1);
   renderSearchFilterMenu();
+}
+function confirmTagFilters(){
+  activeTagFilters=pendingTagFilters.slice();
+  var menu=document.getElementById('search-filter-menu');
+  menu.classList.remove('open');
+  menu.parentElement.querySelector('.search-filter-btn').classList.toggle('active',activeTagFilters.length>0);
   _rG();
+}
+function cancelTagFilters(){
+  var menu=document.getElementById('search-filter-menu');
+  menu.classList.remove('open');
+  menu.parentElement.querySelector('.search-filter-btn').classList.toggle('active',activeTagFilters.length>0);
 }
 document.addEventListener('click',function(e){
   var menu=document.getElementById('search-filter-menu');
