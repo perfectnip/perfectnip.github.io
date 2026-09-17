@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="js/openGame.js"></script>
+  <link rel="manifest" href="appmanifest.json">
+  <meta name="theme-color" content="#4d8cff">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home | JQRG</title>
+  <link rel="icon" type="image/png" href="jq.ico">
+  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --font: "Josefin Sans", sans-serif;
+
+      /* panel glow (static blue -> purple) */
+      --glow-start: #4d8cff; /* blue */
+      --glow-end:   #8a4dff; /* purple */
+
+      /* button rainbow preserved on hover, we keep original gradient there */
+      --button-border: white;
+      --panel-radius: 12px;
+    }
+
+    /* ---------- Base ---------- */
+    * { box-sizing: border-box; font-family: var(--font); }
+    html,body { height: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      background: #0b1020 url("background.png") no-repeat center center fixed;
+      background-size: cover;
+      color: white;
+      font-family: var(--font);
+      text-align: center;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    h1 {
+      margin-bottom: 40px;
+      font-size: 2.8rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px rgba(0,0,0,0.7);
+    }
+
+    h2 {
+      margin-bottom: 40px;
+      font-size: 2.3rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px rgba(0,0,0,0.7);
+    }
+
+    hr {
+      margin-top: 20px;
+      margin-bottom: 20px;
+      border: 1px solid #ffffff;
+      width: 100%;
+    }
+
+    .settings-header {
+      margin-top: 28px;
+      margin-bottom: 28px;
+      font-size: 2.0rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px rgba(0,0,0,0.7);
+    }
+
+    .cloakIconOption {
+      width:100px;
+      height:100px;
+      object-fit:contain;
+      border-radius:10px;
+      border:3px solid transparent;
+      cursor:pointer;
+    }
+
+    .cloakIconOption.active {
+      border-color:#4caf50;
+    }
+
+    #customCloakLabel.active {
+      border-color:#4caf50 !important;
+    }
+
+    /* ---------- Original Button (preserved) ---------- */
+    .btn {
+      display: inline-block;
+      width: 300px; 
+      padding: 12px 28px;
+      border: 2px solid var(--button-border);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.5s ease, box-shadow 0.8s ease, background 1s ease, border-color 0.8s ease, letter-spacing 0.8s ease;
+      background-size: 300% 300%;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .btn:hover {
+      color: #fff;
+      border-color: transparent;
+      background: linear-gradient(90deg, #4d8cff, #8a4dff, #ff4db8, #4d8cff);
+      background-size: 400% 100%;
+      transform: translateY(-4px) scale(1.07);
+      letter-spacing: 1px;
+      box-shadow:
+        0 0 10px rgba(77, 140, 255, 0.6),
+        0 0 20px rgba(138, 77, 255, 0.5),
+        0 0 35px rgba(255, 77, 184, 0.4),
+        inset 0 0 10px rgba(255, 255, 255, 0.2);
+      animation:
+        gradientTravel 4s linear infinite,
+        outlinePulse 2.5s ease-in-out infinite alternate,
+        shineSweep 6s ease-in-out infinite;
+    }
+
+    @keyframes gradientTravel {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+    @keyframes outlinePulse {
+      0% {
+        box-shadow:
+          0 0 10px rgba(77, 140, 255, 0.7),
+          0 0 25px rgba(138, 77, 255, 0.4),
+          0 0 45px rgba(255, 77, 184, 0.3),
+          0 0 0 3px rgba(77, 140, 255, 0.1);
+      }
+      100% {
+        box-shadow:
+          0 0 18px rgba(255, 77, 184, 0.8),
+          0 0 40px rgba(77, 140, 255, 0.6),
+          0 0 65px rgba(138, 77, 255, 0.4),
+          0 0 0 5px rgba(255, 77, 184, 0.15);
+      }
+    }
+    @keyframes shineSweep {
+      0% { filter: brightness(1); }
+      50% { filter: brightness(1.4); }
+      100% { filter: brightness(1); }
+    }
+
+    /* ---------- Announcement link ---------- */
+    .announcement-link {
+      color: white;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    /* ---------- Modals (panels that match button style) ---------- */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      animation-fill-mode: forwards;
+      padding: 24px;
+    }
+
+    .modal-overlay.show { display:flex; animation: fadeIn 0.35s forwards; }
+    .modal-overlay.hide { animation: fadeOut 0.35s forwards; }
+
+    .modal-content {
+      width: 100%;
+      max-width: 680px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border-radius: var(--panel-radius);
+      background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.35));
+      border: 2px solid rgba(255,255,255,0.12);
+      padding: 26px;
+      color: white;
+      text-align: left;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.6);
+      transform: scale(0.95);
+      opacity: 0;
+      transition: all 0.36s cubic-bezier(.2,.9,.2,1);
+      position: relative;
+      backdrop-filter: blur(6px);
+      box-shadow:
+        0 8px 40px rgba(0,0,0,0.6),
+        0 0 18px rgba(77, 140, 255, 0.12),
+        0 0 36px rgba(138, 77, 255, 0.08);
+      border-image: linear-gradient(90deg, var(--glow-start), var(--glow-end)) 1;
+    }
+
+    .modal-content.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .modal-content.active {
+      animation: panelGlow 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes panelGlow {
+      0% {
+        box-shadow:
+          0 8px 40px rgba(0,0,0,0.6),
+          0 0 18px rgba(77, 140, 255, 0.14),
+          0 0 36px rgba(138, 77, 255, 0.09);
+        border-color: rgba(255,255,255,0.12);
+      }
+      100% {
+        box-shadow:
+          0 8px 55px rgba(0,0,0,0.6),
+          0 0 26px rgba(138, 77, 255, 0.18),
+          0 0 48px rgba(77, 140, 255, 0.12);
+        border-color: rgba(255,255,255,0.14);
+      }
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      font-size: 22px;
+      color: white;
+      cursor: pointer;
+      transition: transform 0.25s ease, color 0.25s ease;
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.18);
+    }
+    .close-btn:hover { color: var(--glow-end); transform: scale(1.12); background: rgba(0,0,0,0.25); }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+    /* ---------- Settings gear ---------- */
+    #settingsBtn {
+      position: fixed;
+      top: 18px;
+      right: 22px;
+      font-size: 30px;
+      cursor: pointer;
+      color: white;
+      z-index: 2000;
+      transition: transform 0.28s ease;
+      padding: 6px 8px;
+      border-radius: 8px;
+    }
+    #settingsBtn:hover {
+      transform: rotate(24deg) scale(1.14);
+      color: var(--glow-end);
+    }
+
+    /* ---------- Install App Button ---------- */
+    #installAppBtn {
+      position: fixed;
+      top: 18px;
+      left: 22px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(135deg, #4d8cff, #8a4dff);
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 10px;
+      z-index: 2000;
+      display: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(77, 140, 255, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    #installAppBtn:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 6px 20px rgba(77, 140, 255, 0.6);
+      background: linear-gradient(135deg, #5d9cff, #9a5dff);
+    }
+    #installAppBtn:active {
+      transform: translateY(0) scale(1);
+    }
+
+    /* ---------- Styled form controls matching button look ---------- */
+    .settings-row { margin-bottom: 14px; }
+
+    select.styled-select, input.styled-input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 2px solid rgba(255,255,255,0.12);
+      background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.4));
+      color: white;
+      outline: none;
+      font-family: var(--font);
+      font-size: 15px;
+      transition: transform 0.25s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.02),
+        0 4px 18px rgba(0,0,0,0.5);
+      background-image: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    }
+
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: "▾";
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,0.75);
+      pointer-events: none;
+      font-size: 12px;
+    }
+
+    select.styled-select:focus, input.styled-input:focus {
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,0.2);
+      box-shadow:
+        0 6px 30px rgba(0,0,0,0.6),
+        0 0 18px rgba(77,140,255,0.12),
+        0 0 36px rgba(138,77,255,0.08);
+    }
+
+    .small-note { color: rgba(255,255,255,0.75); font-size: 13px; margin-top: 10px; }
+
+    .micro-btn {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 2px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.45);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+    }
+    .micro-btn:hover {
+      transform: translateY(-3px);
+      box-shadow:
+        0 6px 24px rgba(0,0,0,0.6),
+        0 0 12px rgba(77,140,255,0.12);
+      border-color: transparent;
+      background: linear-gradient(90deg, var(--glow-start), var(--glow-end));
+      color: white;
+    }
+
+    .label { display:block; margin-bottom:6px; font-weight:600; }
+
+    .vspace { height: 10px; }
+
+    button, select, input, textarea { font-family: var(--font); }
+
+    @media (max-width:520px){
+      .modal-content { padding: 18px; max-width: 92%; }
+      .btn { max-width: 100%; padding: 10px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+  <span id="settingsBtn">⚙️</span>
+
+  <h1>JIMMYQRG</h1>
+
+  <h2>MAIN PORTAL</h2>
+
+  <a href="jqrg-games/"><button class="btn">JQRG UNBLOCKED GAMES</button></a>
+  <br>
+  <a href="strategies/"><button class="btn">SCHOOL CHROMEBOOK SPECIAL STRATEGIES</button></a>
+  <br>
+  <a href="tools/"><button class="btn">TOOLS</button></a>
+  <br>
+
+  <h1>OTHERS</h1>
+
+  <a href="download/"><button class="btn">DOWNLOAD FILES</button></a>
+  <br>
+  <a href="unblocks/"><button class="btn">OTHER UNBLOCKS</button></a>
+  <br>
+  <a href="test/jqrgd.html"><button class="btn">JQRGD TEST</button></a>
+  <br>
+  
+  <p><span class="announcement-link">Announcements (Click to reopen)</span><br><br>If you want to join me and make the website together, click <a href="join/" target="_blank" style="color:#4d8cff; text-decoration:underline;">here</a>!</p>
+
+  <div class="modal-overlay" id="announcementModal">
+    <div class="modal-content" id="announcementContent">
+      <span class="close-btn" id="closeModal">&times;</span>
+      <h2 style="text-align:center;">📢 Announcements</h2>
+      <p>More informations and updates can be found <a href="https://chat.jiushifen.com/invite/haG5F-FQ" target="_blank" style="color:#4d8cff; text-decoration:underline;">here</a>. (You'll have to sign in first)</p>
+      <hr style="border: 1px solid rgba(255,255,255,0.3);">
+      <p>✨ Latest updates:</p>
+        <ul>
+          <li>Fixed Wordle</li>
+          <li>Exporting data and Importing data is now on testing</li>
+        </ul>
+      <p>🚀Future Update</p>
+        <ul>
+          <li>Having a page for exporting and importing data.</li>
+          <li>Fix Scratch geometry dash</li>
+        </ul>
+      <p>⏱️History</p>
+        <ul>
+          <li>Fixed in total <b>864</b> bugs</li>
+          <li>Added in total <b>65</b> games</li>
+        </ul>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-content" id="settingsContent">
+      <span class="close-btn" id="closeSettings">&times;</span>
+
+      <h2 style="text-align:center;">⚙️ Settings</h2>
+
+      <hr>
+
+      <label><b>Auto pop up announcements:</b></label><br>
+      <select id="announcementSetting" style="width:100%; padding:8px; margin-top:8px; border-radius:8px;">
+        <option value="always">Always</option>
+        <option value="big">Only when there is a big announcement</option>
+      </select>
+
+      <br><br><br>
+
+      <label><b>Pop up</b></label>
+      <button class="btn" onclick="openGame('https://student.jimmyqrg.com?page=extend')">JIMMYQRG</button>
+      <br><br><br>
+      
+      <label><b>Install App</b></label><br>
+      <p style="margin-top:10px; opacity:0.8; font-size:0.9rem;">To install this app, click the three dots on the right top corner, click <b>Cast, Save, and Share</b>, and click <b>Install this page as an app</b>.</p>
+
+      <br><br><br>
+
+      <label><b>Panic Key</b></label><br>
+      <p style="margin-top:20px; opacity:0.8;">A key that auto-redirect to an website right when you press it. This will exit the website immediately in an emergency.<br><br>THIS WORKS IN PAGES ONLY, NOT IN GAMES.<br></p>
+      <p>Customize key</p>
+      <button id="panicKeyBtn" class="btn customizeKey"></button><br>
+      <p>Customize website</p>
+      <input type="text" id="panicLinkInput" style="width:100%; padding:8px; margin-top:5px; border-radius:8px;" placeholder="https://example.com" />
+      <br><br><br>
+
+      <label><b>Game tab cloak</b></label><br><br>
+
+      <p><b>Tab Name</b></p>
+      <input id="cloakTitle" type="text" placeholder="Enter tab title"
+        style="width:100%; padding:8px; margin-top:5px; border-radius:8px;">
+
+      <br><br>
+
+      <p><b>Tab Icon</b></p>
+
+      <div id="cloakIconContainer" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
+
+        <img class="cloakIconOption" data-src="cloak-images/default.png" src="cloak-images/default.png">
+        <img class="cloakIconOption" data-src="cloak-images/docs.png" src="cloak-images/docs.png">
+        <img class="cloakIconOption" data-src="cloak-images/forms.png" src="cloak-images/forms.png">
+        <img class="cloakIconOption" data-src="cloak-images/drive.png" src="cloak-images/drive.png">
+        <img class="cloakIconOption" data-src="cloak-images/pausd.png" src="cloak-images/pausd.png">
+        <img class="cloakIconOption" data-src="cloak-images/schoology.png" src="cloak-images/schoology.png">
+        <img class="cloakIconOption" data-src="cloak-images/gmail.png" src="cloak-images/gmail.png">
+
+        <label id="customCloakLabel" style="
+            width:100%; height:100px; border:2px dashed #aaa;
+            display:flex; justify-content:center; align-items:center;
+            border-radius:10px; cursor:pointer;">
+          <span style="opacity:0.6;">Custom Icon</span>
+          <input id="customCloakInput" type="file" accept="image/*" style="display:none;">
+        </label>
+
+      </div>
+
+      <br><br>
+
+      <hr>
+      <p class="settings-header">Others</p>
+
+      <label><b>Access code:</b></label>
+      <input id="accessCode" type="password" placeholder="Enter code" style="width:100%; padding:8px; margin-top:5px; border-radius:8px;">
+      <button id="authorizeBtn" class="btn" style="margin-top:15px;">AUTHORIZE</button>
+      <button id="unauthorizeBtn" class="btn" style="margin-top:10px;">UNAUTHORIZE</button>
+      <p style="margin-top:20px; opacity:0.8;">For interaction in construction zone</p>
+      <br><br><br>
+
+      <label><b>Lisence</b></label>
+      <p>All rights held by <b>ikunbeautiful@gmail.com</b><br>No part of this website may be copied, reused, redistributed, modified, or commercially exploited <b>without prior written permission from the owner</b>.</p>
+
+    </div>
+  </div>
+
+  <script>
+    let hasBigAnnouncement = false;
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(() => console.log('Service Worker registered'))
+        .catch(err => console.error('Service Worker registration failed:', err));
+    }
+
+    const modal = document.getElementById('announcementModal');
+    const content = document.getElementById('announcementContent');
+    const openBtn = document.querySelector('.announcement-link');
+    const closeBtn = document.getElementById('closeModal');
+
+    function openModal() {
+      modal.classList.remove('hide');
+      content.classList.remove('hide');
+      modal.style.display = 'flex';
+      setTimeout(() => {
+        modal.classList.add('show');
+        content.classList.add('show', 'active');
+      }, 10);
+    }
+
+    function closeModal() {
+      modal.classList.remove('show');
+      content.classList.remove('show', 'active');
+      content.classList.add('hide');
+      modal.classList.add('hide');
+      setTimeout(() => {
+        modal.style.display = 'none';
+        content.classList.remove('hide');
+      }, 400);
+    }
+
+    const autoSetting = localStorage.getItem("autoAnnouncement") || "always";
+
+    if (autoSetting === "always") {
+      window.addEventListener('load', openModal);
+    } else if (autoSetting === "big" && hasBigAnnouncement) {
+      window.addEventListener('load', openModal);
+    }
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+
+    window.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    const settingsBtn = document.getElementById("settingsBtn");
+    const settingsModal = document.getElementById("settingsModal");
+    const settingsContent = document.getElementById("settingsContent");
+    const closeSettings = document.getElementById("closeSettings");
+
+    settingsBtn.addEventListener("click", () => {
+      settingsModal.style.display = "flex";
+      setTimeout(() => {
+        settingsModal.classList.add("show");
+        settingsContent.classList.add("show", "active");
+      }, 10);
+    });
+
+    closeSettings.addEventListener("click", () => {
+      settingsModal.classList.remove("show");
+      settingsContent.classList.remove("show","active");
+      settingsContent.classList.add("hide");
+      settingsModal.classList.add("hide");
+      setTimeout(() => {
+        settingsModal.style.display = "none";
+        settingsContent.classList.remove("hide");
+      }, 400);
+    });
+
+    window.addEventListener("click", e => {
+      if (e.target === settingsModal) closeSettings.click();
+    });
+
+    const announcementSetting = document.getElementById("announcementSetting");
+    announcementSetting.value = autoSetting;
+
+    announcementSetting.addEventListener("change", () => {
+      localStorage.setItem("autoAnnouncement", announcementSetting.value);
+    });
+
+    const authorizeBtn = document.getElementById("authorizeBtn");
+    const unauthorizeBtn = document.getElementById("unauthorizeBtn");
+
+    authorizeBtn.addEventListener("click", () => {
+      const code = document.getElementById("accessCode").value;
+      if (code === "asdfghjkl;'") {
+        localStorage.setItem("user", "authorized");
+        alert("Access granted.");
+      } else {
+        alert("Incorrect code.");
+      }
+    });
+
+    unauthorizeBtn.addEventListener("click", () => {
+      localStorage.setItem("user", "normal");
+      alert("User unauthorized.");
+    });
+
+    const PANIC_KEY_STORAGE = "panicKey";
+    const PANIC_LINK_STORAGE = "panicKeyLink";
+
+    let panicKey = localStorage.getItem(PANIC_KEY_STORAGE) || "ShiftRight";
+    let isRecording = false;
+    let previousKey = panicKey;
+
+    const customizeKey = document.getElementById("panicKeyBtn");
+    const linkInput = document.getElementById("panicLinkInput");
+
+    customizeKey.textContent = panicKey;
+
+    linkInput.value = localStorage.getItem(PANIC_LINK_STORAGE) || "";
+
+    linkInput.addEventListener("input", () => {
+      localStorage.setItem(PANIC_LINK_STORAGE, linkInput.value);
+    });
+
+    customizeKey.addEventListener("click", (e) => {
+      e.stopPropagation(); 
+      if (isRecording) return;
+
+      isRecording = true;
+      previousKey = panicKey;
+
+      customizeKey.textContent = "";
+      customizeKey.style.opacity = "0.6";
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (!isRecording) return;
+
+      e.stopImmediatePropagation();
+      
+      panicKey = e.code;
+      localStorage.setItem(PANIC_KEY_STORAGE, panicKey);
+
+      customizeKey.textContent = panicKey;
+      customizeKey.style.opacity = "1";
+      isRecording = false;
+    }, true);
+
+    document.addEventListener("click", () => {
+      if (!isRecording) return;
+
+      customizeKey.textContent = previousKey;
+      customizeKey.style.opacity = "1";
+      isRecording = false;
+    });
+
+    function fixRedirectLink(link) {
+      if (!link) return "https://www.jimmyqrg.com";
+      
+      if (link.startsWith("http://") || link.startsWith("https://")) {
+        return link;
+      }
+      
+      if (link.startsWith("/") || link.includes("/")) {
+        const cleanPath = link.startsWith("/") ? link.substring(1) : link;
+        return `https://student.jimmyqrg.com/${cleanPath}`;
+      }
+      
+      if (link.includes(".") && !link.includes("/")) {
+        return `https://${link}`;
+      }
+      
+      return "https://www.jimmyqrg.com";
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (isRecording) return;
+      
+      const currentPanicKey = localStorage.getItem(PANIC_KEY_STORAGE) || "ShiftRight";
+      const currentPanicLink = localStorage.getItem(PANIC_LINK_STORAGE) || "";
+      
+      const redirectLink = fixRedirectLink(currentPanicLink);
+
+      if (e.code === currentPanicKey) {
+        window.location.href = redirectLink;
+      }
+    });
+
+    let deferredPrompt = null;
+    let installBtnListenerAdded = false;
+    const installAppBtn = document.getElementById('installAppBtn');
+
+    async function handleInstallClick() {
+      if (!deferredPrompt) {
+        alert('Install prompt not available. Please use your browser\'s menu to install.');
+        return;
+      }
+
+      deferredPrompt.prompt();
+
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+      } else {
+      }
+
+      deferredPrompt = null;
+    }
+
+    function checkIfInstalled() {
+      if (window.matchMedia('(display-mode: standalone)').matches || 
+          window.navigator.standalone === true) {
+        if (installAppBtn) {
+          installAppBtn.style.display = 'none';
+        }
+        return true;
+      }
+      return false;
+    }
+
+    if (checkIfInstalled()) {
+    } else {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+
+        if (installAppBtn) {
+          installAppBtn.style.display = 'block';
+        }
+
+        if (!installBtnListenerAdded) {
+          installBtnListenerAdded = true;
+          
+          if (installAppBtn) {
+            installAppBtn.addEventListener('click', handleInstallClick);
+          }
+        }
+      });
+
+      window.addEventListener('appinstalled', () => {
+        if (installAppBtn) {
+          installAppBtn.style.display = 'none';
+        }
+        deferredPrompt = null;
+      });
+    }
+  </script>
+
+</body>
+</html>
