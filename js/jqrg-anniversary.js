@@ -69,7 +69,8 @@
   // Old versions of the site are shown as iframed pages, ordered oldest →
   // newest. MUSIC_URL is the nostalgic/dreamcore loop for the archive stage.
   var OLD_VERSIONS = [
-    { label: "May 2025 — the very first version", url: "/anniversary/versions/may-2025.html" }
+    { label: "V0.0 — Home", url: "/anniversary/versions/v0.0-home.html" },
+    { label: "V0.0 — Games", url: "/anniversary/versions/v0.0-games.html" }
   ];
   var MUSIC_URL = '/music/comfort-chain.mp3';
 
