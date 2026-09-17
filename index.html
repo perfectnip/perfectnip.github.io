@@ -1436,6 +1436,11 @@ html,body{
 .modal-overlay.open .modal{transform:translateY(0) scale(1);opacity:1}
 #announcement-modal .modal{max-width:520px}
 #announcement-modal .modal-body a{color:#fff !important;text-decoration:underline}
+#anniversary-modal .modal{max-width:440px}
+#anniversary-modal .modal-title{color:#ffc14d;font-weight:600}
+#anniversary-modal .modal-body{text-align:center;font-size:17px;font-weight:600;padding:26px 22px}
+#anniversary-modal .anniv-play-btn{display:inline-flex;align-items:center;justify-content:center;margin-top:16px;padding:11px 28px;border:0;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+#anniversary-modal .anniv-play-btn:hover{filter:brightness(1.12)}
 .modal-header{
   display:flex;align-items:center;justify-content:space-between;
   padding:18px 22px;border-bottom:1px solid var(--border-light);flex-shrink:0;
@@ -3531,8 +3536,22 @@ body.ui-hidden .top-bar > .tb-actions > *:not(.hide-ui-btn) *::after{
       </div>
     </div>
 
+<div class="modal-overlay" id="anniversary-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">First Anniversary</h3>
+      <button class="modal-close" onclick="closeAnniversary()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin:0">Win PERMANENT PREMIUM PLUS!</p>
+      <button type="button" class="anniv-play-btn" onclick="closeAnniversary();JqrgAnniversary.launch()">Play</button>
+    </div>
+  </div>
+</div>
+
 <script src="/js/jqrg-particles.js?v=71" defer></script>
 <script src="/js/openGame.js?v=72"></script>
+<script src="/js/jqrg-anniversary.js?v=1"></script>
           <script>
 function _iA(){
   if(window.__jqrgIsAuthed){try{return !!window.__jqrgIsAuthed()}catch(e){}}
@@ -4968,12 +4987,34 @@ document.addEventListener('click',function(e){
   var modal=document.getElementById('announcement-modal');
   if(e.target===modal) closeAnnouncement();
 });
+var __anniversaryShown=false;
+var ANNIVERSARY_START=new Date(2026,8,20,0,0,0); // Sep 20, 2026 local time
+function maybeShowAnniversary(){
+  try{
+    if(localStorage.getItem('jqrgAnniversaryDismissed')==='1') return;
+    var now=new Date();
+    var forceParam=/[?&]anniversary=/.test(location.search);
+    if(forceParam || now.getTime()>=ANNIVERSARY_START.getTime()){
+      document.getElementById('anniversary-modal').classList.add('open');
+      __anniversaryShown=true;
+    }
+  }catch(e){}
+}
+function closeAnniversary(){
+  document.getElementById('anniversary-modal').classList.remove('open');
+  try{ localStorage.setItem('jqrgAnniversaryDismissed','1'); }catch(e){}
+}
+document.addEventListener('click',function(e){
+  var m=document.getElementById('anniversary-modal');
+  if(e.target===m) closeAnniversary();
+});
+document.addEventListener('DOMContentLoaded',maybeShowAnniversary);
 (function(){
   var setting=localStorage.getItem('autoAnnouncement')||'always';
   if(setting==='always'){
-    window.addEventListener('load',openAnnouncement);
+    window.addEventListener('load',function(){ if(!__anniversaryShown) openAnnouncement(); });
   }else if(setting==='big'&&hasBigAnnouncement){
-    window.addEventListener('load',openAnnouncement);
+    window.addEventListener('load',function(){ if(!__anniversaryShown) openAnnouncement(); });
   }
 })();
 

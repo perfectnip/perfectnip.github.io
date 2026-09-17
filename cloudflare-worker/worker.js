@@ -250,6 +250,7 @@ async function hasPremiumAccess(env, user) {
   if (!user) return false;
   if (ADMIN_USERNAMES.has((user.username || '').toLowerCase())) return true;
   if (complimentaryTier(user)) return true;
+  if (await resolveAnnivRewardTier(env, user.id)) return true;
   const sub = await readSubscription(env, user.id);
   return isSubscriptionActive(sub);
 }
@@ -257,10 +258,15 @@ async function hasPremiumAccess(env, user) {
 async function effectiveSubscriptionTier(env, user) {
   if (!user) return null;
   if (ADMIN_USERNAMES.has((user.username || '').toLowerCase())) return 'admin';
-  const c = complimentaryTier(user);
-  if (c) return c;
+  let best = complimentaryTier(user) || null;
+  const rw = await resolveAnnivRewardTier(env, user.id);
+  if (annivTierRank(rw) > annivTierRank(best)) best = rw;
   const sub = await readSubscription(env, user.id);
-  return isSubscriptionActive(sub) ? (sub.tier || 'premium') : null;
+  if (isSubscriptionActive(sub)) {
+    const st = sub.tier || 'premium';
+    if (annivTierRank(st) > annivTierRank(best)) best = st;
+  }
+  return best;
 }
 
 const BANNED_EMAILS = new Set([
@@ -1132,6 +1138,146 @@ async function handleUlwGate(request, env, origin) {
 
 const BAD_UA = /headlesschrome|phantomjs|puppeteer|playwright|selenium|cypress|goguardian|securly|lightspeed|iboss|bluecoat|forcepoint|fortiguard|barracuda|webroot|kaspersky|sophos|cisco[\s-]?umbrella|mcafee|paloalto|zscaler|crawler|spider|scraper|bot\//i;
 
+/* ====================================================================
+ * First Anniversary quiz — reward tracking & granting
+ * ==================================================================*/
+
+// Release gate. Flip to true on release day (keep in sync with the frontend
+// ANNIV_PENDING flag). While false, only admins (jimmyqrg) can submit, and
+// they run in test mode (infinite tries, no counter/grant/persist).
+const ANNIVERSARY_RELEASED = false;
+
+// Server-side authoritative answer key: question text -> correct answer.
+// Stored in a wrangler secret (ANNIVERSARY_KEY) so the correct answers are
+// NOT visible in this public repo. Set it via:
+//   wrangler secret put ANNIVERSARY_KEY   (value = the JSON object below)
+function getAnniversaryKey(env) {
+  try {
+    const raw = env.ANNIVERSARY_KEY;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (_) { return null; }
+}
+
+const ANNIV_DAY = 86400;
+
+function annivTierRank(tier) {
+  if (tier === 'plus') return 3;
+  if (tier === 'premium') return 2;
+  return 0;
+}
+
+async function readAnnivUser(env, userId) {
+  if (!env.SUB_KV || !userId) return null;
+  const raw = await env.SUB_KV.get('anniv:' + userId);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (_) { return null; }
+}
+
+async function readAnnivRewards(env, userId) {
+  if (!env.SUB_KV || !userId) return [];
+  const raw = await env.SUB_KV.get('annivreward:' + userId);
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch (_) { return []; }
+}
+
+async function appendAnnivReward(env, userId, tier, endSec) {
+  const rewards = await readAnnivRewards(env, userId);
+  rewards.push({ tier, end: endSec || null, granted_at: Math.floor(Date.now() / 1000) });
+  await env.SUB_KV.put('annivreward:' + userId, JSON.stringify(rewards));
+}
+
+// Highest active reward tier for a user (permanent grants never expire).
+async function resolveAnnivRewardTier(env, userId) {
+  const now = Math.floor(Date.now() / 1000);
+  const rewards = await readAnnivRewards(env, userId);
+  let best = null;
+  for (const r of rewards) {
+    if (r.end != null && r.end < now) continue;
+    if (annivTierRank(r.tier) > annivTierRank(best)) best = r.tier;
+  }
+  return best;
+}
+
+// Best-tier-wins ladder. rank = global submission order (1-based).
+function annivRewardFor(rank, score) {
+  if (score >= 9 && rank <= 5)   return { label: 'PERMANENT PREMIUM PLUS', grants: [['plus', null]] };
+  if (score >= 9 && rank <= 20)  return { label: '30-day Premium Plus, then permanent Premium', grants: [['plus', 30 * ANNIV_DAY], ['premium', null]] };
+  if (score === 8 && rank <= 20) return { label: '1-year Premium', grants: [['premium', 365 * ANNIV_DAY]] };
+  if (score >= 6 && score <= 7 && rank <= 50) return { label: '4-month Premium', grants: [['premium', 120 * ANNIV_DAY]] };
+  if (score === 5 && rank <= 100) return { label: '2-month Premium', grants: [['premium', 60 * ANNIV_DAY]] };
+  return { label: '1-month Premium', grants: [['premium', 30 * ANNIV_DAY]] };
+}
+
+async function handleAnniversarySubmit(request, env, origin) {
+  if (origin && !isAllowedOrigin(origin)) {
+    return jsonResponse({ error: 'Forbidden origin' }, 403, origin);
+  }
+  const token = getBearer(request);
+  const user = await resolveUser(token);
+  if (!user) {
+    return jsonResponse({ error: 'auth_required', message: 'Sign in to claim your anniversary reward.' }, 401, origin);
+  }
+  if (isUserBanned(user)) return bannedResponse(origin);
+
+  const isAdmin = ADMIN_USERNAMES.has((user.username || '').toLowerCase());
+  const isTest = !ANNIVERSARY_RELEASED;
+
+  // Pending: only the owner (admin) can use it; everyone else is not released yet.
+  if (isTest && !isAdmin) {
+    return jsonResponse({ error: 'not_released', message: 'The anniversary game is not open yet.' }, 403, origin);
+  }
+
+  const key = getAnniversaryKey(env);
+  if (!key) {
+    return jsonResponse({ error: 'not_configured', message: 'Anniversary quiz is not configured.' }, 503, origin);
+  }
+
+  let body;
+  try { body = await request.json(); } catch (_) { return jsonResponse({ error: 'bad_json' }, 400, origin); }
+
+  const answers = Array.isArray(body.answers) ? body.answers : [];
+  const seen = new Set();
+  let score = 0;
+  for (const a of answers) {
+    if (!a || typeof a.q !== 'string' || typeof a.a !== 'string') continue;
+    if (seen.has(a.q)) continue;
+    seen.add(a.q);
+    if (key[a.q] === a.a) score++;
+  }
+
+  // Pending test mode (owner only): score + reward preview, no counter/grant/persist.
+  if (isTest) {
+    const testRank = (body && typeof body.testRank === 'number' && body.testRank > 0) ? Math.floor(body.testRank) : 1;
+    const reward = annivRewardFor(testRank, score);
+    return jsonResponse({ result: 'ok', score, reward: reward.label, mode: 'test', rank_preview: testRank }, 200, origin);
+  }
+
+  // Released: one submission per account.
+  const existing = await readAnnivUser(env, user.id);
+  if (existing) {
+    return jsonResponse({ result: 'already_submitted', rank: existing.rank, score: existing.score, reward: existing.reward }, 200, origin);
+  }
+
+  // Global rank via a KV counter (best-effort; KV is eventually consistent).
+  let count = 0;
+  try { const raw = await env.SUB_KV.get('anniv:count'); count = raw ? (parseInt(raw, 10) || 0) : 0; } catch (_) {}
+  const rank = count + 1;
+  try { await env.SUB_KV.put('anniv:count', String(rank)); } catch (_) {}
+
+  const reward = annivRewardFor(rank, score);
+  const now = Math.floor(Date.now() / 1000);
+  for (const [tier, daysOrNull] of reward.grants) {
+    await appendAnnivReward(env, user.id, tier, daysOrNull == null ? null : now + daysOrNull);
+  }
+
+  const record = { rank, score, reward: reward.label, username: user.username, ts: now };
+  await env.SUB_KV.put('anniv:' + user.id, JSON.stringify(record));
+
+  return jsonResponse({ result: 'ok', rank, score, reward: reward.label }, 200, origin);
+}
+
 export default {
   async fetch(request, env) {
     /* Kill-switch cookie: if bot-shield.js already flagged this visitor,
@@ -1210,6 +1356,10 @@ export default {
 
     if (url.pathname === '/v1/portal-announcements' && request.method === 'GET') {
       return handlePortalAnnouncements(request, env, origin);
+    }
+
+    if (url.pathname === '/v1/anniversary-submit' && request.method === 'POST') {
+      return handleAnniversarySubmit(request, env, origin);
     }
 
     if (url.pathname === '/__healthz') {
