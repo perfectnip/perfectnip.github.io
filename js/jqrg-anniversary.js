@@ -71,7 +71,8 @@
   var OLD_VERSIONS = [
     { label: "V0.0 — Home", url: "/anniversary/versions/v0.0-home.html" },
     { label: "V0.0 — Games", url: "/anniversary/versions/v0.0-games.html" },
-    { label: "V0.1 — Home", url: "/anniversary/versions/v0.1-home.html" }
+    { label: "V0.1 — Home", url: "/anniversary/versions/v0.1-home.html" },
+    { label: "V0.1 — Games", url: "/anniversary/versions/v0.1-games.html" }
   ];
   var MUSIC_URL = '/music/comfort-chain.mp3';
 
