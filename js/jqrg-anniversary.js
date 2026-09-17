@@ -151,46 +151,57 @@
 
   function ensureRoot() {
     if (root) return root;
+
+    // Retro arcade fonts (self-contained injection).
+    var fontLink = document.createElement('link');
+    fontLink.rel = 'stylesheet';
+    fontLink.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap';
+    document.head.appendChild(fontLink);
+
     root = document.createElement('div');
     root.id = 'anniv-root';
     document.body.appendChild(root);
 
     var style = document.createElement('style');
     style.textContent = [
-      '#anniv-root{position:fixed;inset:0;z-index:9999;background:rgba(8,5,16,.97);color:#e8e8f0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column;overflow:hidden}',
+      '#anniv-root{position:fixed;inset:0;z-index:9999;background:#07030f;background-image:linear-gradient(rgba(168,85,247,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,.05) 1px,transparent 1px);background-size:44px 44px;color:#ece6ff;font-family:"VT323",monospace;font-size:19px;display:flex;flex-direction:column;overflow:hidden}',
       '#anniv-root *{box-sizing:border-box}',
-      '#anniv-root .anniv-top{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.08)}',
-      '#anniv-root .anniv-brand{font-weight:700;letter-spacing:.04em}',
-      '#anniv-root .anniv-close{background:none;border:0;color:rgba(255,255,255,.55);font-size:24px;cursor:pointer;line-height:1;padding:4px 8px;border-radius:8px}',
+      '#anniv-root::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:99998;background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 2px,transparent 2px 4px)}',
+      '#anniv-root::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:99998;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.6) 100%)}',
+      '#anniv-root .anniv-top{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid rgba(168,85,247,.3);z-index:1}',
+      '#anniv-root .anniv-brand{font-family:"Press Start 2P",monospace;font-size:11px;color:#ffc14d;text-shadow:0 0 8px rgba(255,193,77,.7);letter-spacing:.05em}',
+      '#anniv-root .anniv-close{background:none;border:0;color:rgba(255,255,255,.55);font-size:24px;cursor:pointer;line-height:1;padding:4px 8px;border-radius:8px;font-family:"Press Start 2P",monospace}',
       '#anniv-root .anniv-close:hover{color:#fff;background:rgba(255,255,255,.08)}',
-      '#anniv-root .anniv-stage{flex:1;overflow-y:auto;padding:28px 20px}',
-      '#anniv-root .anniv-inner{max-width:760px;margin:0 auto}',
-      '#anniv-root h1{font-size:26px;margin:0 0 6px}',
-      '#anniv-root h2{font-size:20px;margin:0 0 12px}',
-      '#anniv-root p.lead{opacity:.72;margin:0 0 18px;line-height:1.55}',
-      '#anniv-root .anniv-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 22px;border:0;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:filter .2s,transform .1s}',
-      '#anniv-root .anniv-btn:hover{filter:brightness(1.12)}',
-      '#anniv-root .anniv-btn:active{transform:scale(.97)}',
-      '#anniv-root .anniv-btn.ghost{background:rgba(255,255,255,.08);color:#e8e8f0}',
-      '#anniv-root .anniv-foot{display:flex;justify-content:space-between;gap:12px;padding:16px 20px;border-top:1px solid rgba(255,255,255,.08)}',
-      '#anniv-root .rules-list{display:flex;flex-direction:column;gap:10px;margin:16px 0}',
-      '#anniv-root .rule{display:flex;justify-content:space-between;gap:14px;padding:12px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px}',
-      '#anniv-root .rule .r-head{font-weight:700;white-space:nowrap;color:#c4b5fd}',
-      '#anniv-root .rule .r-body{text-align:right;opacity:.85}',
-      '#anniv-root .rules-note{margin-top:14px;font-size:13px;opacity:.6;line-height:1.5}',
-      '#anniv-root .quiz-counter{font-size:13px;opacity:.6;margin-bottom:14px}',
-      '#anniv-root .quiz-q{font-size:19px;font-weight:600;margin:0 0 18px;line-height:1.45}',
+      '#anniv-root .anniv-stage{flex:1;overflow-y:auto;padding:30px 20px;z-index:1}',
+      '#anniv-root .anniv-inner{max-width:780px;margin:0 auto}',
+      '#anniv-root .anniv-stage-label{font-family:"Press Start 2P",monospace;font-size:10px;color:#ff4dd5;text-shadow:0 0 8px rgba(255,77,213,.6);letter-spacing:.12em;margin-bottom:16px}',
+      '#anniv-root .anniv-title{font-family:"Press Start 2P",monospace;font-size:22px;line-height:1.6;color:#fff;text-shadow:0 0 14px rgba(178,107,255,.85),0 0 28px rgba(255,77,213,.4);text-align:center;margin:0 0 10px}',
+      '#anniv-root .anniv-sub{font-size:20px;color:rgba(236,230,255,.78);text-align:center;margin:0 0 22px;line-height:1.4}',
+      '#anniv-root .anniv-btn{font-family:"Press Start 2P",monospace;font-size:11px;padding:15px 22px;border:2px solid #a855f7;border-radius:8px;background:rgba(168,85,247,.14);color:#fff;cursor:pointer;letter-spacing:.05em;text-shadow:0 0 6px rgba(255,255,255,.4);box-shadow:0 0 12px rgba(168,85,247,.4),inset 0 0 12px rgba(168,85,247,.2);transition:transform .08s,box-shadow .15s,background .15s}',
+      '#anniv-root .anniv-btn:hover{background:rgba(168,85,247,.3);box-shadow:0 0 18px rgba(168,85,247,.7),inset 0 0 14px rgba(168,85,247,.35);transform:translateY(-1px)}',
+      '#anniv-root .anniv-btn:active{transform:translateY(1px) scale(.98)}',
+      '#anniv-root .anniv-btn.ghost{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.25);box-shadow:none;text-shadow:none}',
+      '#anniv-root .anniv-foot{display:flex;justify-content:space-between;gap:12px;padding:16px 20px;border-top:1px solid rgba(168,85,247,.3);z-index:1}',
+      '#anniv-root .anniv-crt{border:10px solid #1a0f2e;border-radius:14px;box-shadow:0 0 0 2px #a855f7,0 0 26px rgba(168,85,247,.5),inset 0 0 30px rgba(0,0,0,.7);background:#000;overflow:hidden;margin:0 auto 14px;max-width:640px}',
+      '#anniv-root .anniv-crt iframe{display:block;width:100%;height:56vh;border:0;background:#000}',
+      '#anniv-root .anniv-slide-label{font-size:16px;color:rgba(236,230,255,.65);text-align:center;margin-bottom:18px}',
+      '#anniv-root .anniv-rule{display:flex;align-items:center;gap:14px;padding:12px 16px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.25);border-radius:10px;margin-bottom:10px}',
+      '#anniv-root .anniv-rule .trophy{font-family:"Press Start 2P",monospace;font-size:15px;color:#ffc14d;text-shadow:0 0 8px rgba(255,193,77,.6);flex-shrink:0}',
+      '#anniv-root .anniv-rule .r-head{font-family:"Press Start 2P",monospace;font-size:9px;color:#ff4dd5;margin-bottom:3px}',
+      '#anniv-root .anniv-rule .r-body{font-size:17px;color:rgba(236,230,255,.9);line-height:1.3}',
+      '#anniv-root .anniv-rules-note{margin-top:16px;font-size:16px;color:rgba(236,230,255,.6);line-height:1.4}',
+      '#anniv-root .quiz-counter{font-family:"Press Start 2P",monospace;font-size:10px;color:#ffc14d;margin-bottom:16px;letter-spacing:.08em}',
+      '#anniv-root .quiz-q{font-size:22px;font-weight:400;margin:0 0 18px;line-height:1.4;color:#fff}',
       '#anniv-root .quiz-opts{display:flex;flex-direction:column;gap:10px}',
-      '#anniv-root .quiz-opt{display:flex;align-items:center;gap:12px;padding:13px 15px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;cursor:pointer;transition:background .15s,border-color .15s;font-size:15px}',
-      '#anniv-root .quiz-opt:hover{background:rgba(255,255,255,.09)}',
-      '#anniv-root .quiz-opt.selected{border-color:#a855f7;background:rgba(168,85,247,.14)}',
-      '#anniv-root .quiz-opt .letter{display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:8px;background:rgba(255,255,255,.1);font-weight:700;font-size:13px;flex-shrink:0}',
-      '#anniv-root .trap-msg{margin-top:14px;padding:12px 14px;border-radius:12px;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);color:#fbbf24;font-weight:600}',
-      '#anniv-root .result-score{font-size:44px;font-weight:800;text-align:center;margin:14px 0 4px}',
-      '#anniv-root .result-label{text-align:center;opacity:.7;margin-bottom:20px}',
-      '#anniv-root .result-reward{text-align:center;padding:16px;border-radius:14px;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.3);font-size:17px;font-weight:600;margin-bottom:8px}',
-      '#anniv-root .slide-frame{width:100%;height:62vh;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:#000;margin-bottom:14px}',
-      '#anniv-root .slide-label{font-size:13px;opacity:.7;margin-bottom:16px}'
+      '#anniv-root .quiz-opt{display:flex;align-items:center;gap:12px;padding:13px 15px;background:rgba(255,255,255,.04);border:1px solid rgba(168,85,247,.35);border-radius:10px;cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s;font-size:19px}',
+      '#anniv-root .quiz-opt:hover{background:rgba(255,255,255,.08)}',
+      '#anniv-root .quiz-opt.selected{border-color:#ffc14d;background:rgba(255,193,77,.12);box-shadow:0 0 12px rgba(255,193,77,.4)}',
+      '#anniv-root .quiz-opt .letter{display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:8px;background:rgba(168,85,247,.25);font-family:"Press Start 2P",monospace;font-size:12px;flex-shrink:0;color:#fff}',
+      '#anniv-root .trap-msg{margin-top:14px;padding:12px 14px;border-radius:10px;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.4);color:#ffc14d;font-family:"Press Start 2P",monospace;font-size:10px;line-height:1.6}',
+      '#anniv-root .anniv-score{font-family:"Press Start 2P",monospace;font-size:42px;color:#ffc14d;text-shadow:0 0 18px rgba(255,193,77,.85);text-align:center;margin:16px 0 6px}',
+      '#anniv-root .anniv-score-label{font-size:19px;color:rgba(236,230,255,.7);text-align:center;margin-bottom:22px}',
+      '#anniv-root .anniv-reward{text-align:center;padding:16px;border-radius:14px;background:rgba(168,85,247,.14);border:1px solid rgba(168,85,247,.4);font-size:20px;margin-bottom:8px;color:#fff;box-shadow:0 0 16px rgba(168,85,247,.3)}',
+      '#anniv-root .anniv-clear{font-family:"Press Start 2P",monospace;font-size:26px;color:#4ade80;text-shadow:0 0 16px rgba(74,222,128,.7);text-align:center;margin-bottom:6px}'
     ].join('\n');
     document.head.appendChild(style);
     return root;
@@ -204,6 +215,10 @@
 
   function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function stageLabel(text) {
+    return el('<div class="anniv-stage-label">' + esc(text) + '</div>');
   }
 
   function setStage(node) {
@@ -258,13 +273,14 @@
     var v = OLD_VERSIONS[slide] || OLD_VERSIONS[0];
 
     var inner = el('<div class="anniv-inner"></div>');
-    inner.appendChild(el('<h1>First Anniversary</h1>'));
-    inner.appendChild(el('<p class="lead">A look back at where it all began.</p>'));
-    inner.appendChild(el('<iframe class="slide-frame" src="' + esc(v.url) + '" allowfullscreen loading="lazy"></iframe>'));
-    inner.appendChild(el('<div class="slide-label">' + esc(v.label) + (OLD_VERSIONS.length > 1 ? ' · ' + (slide + 1) + ' / ' + OLD_VERSIONS.length : '') + '</div>'));
+    inner.appendChild(stageLabel('STAGE 1 — THE ARCHIVE'));
+    inner.appendChild(el('<div class="anniv-title">FIRST<br>ANNIVERSARY</div>'));
+    inner.appendChild(el('<div class="anniv-sub">A look back at where it all began.</div>'));
+    inner.appendChild(el('<div class="anniv-crt"><iframe src="' + esc(v.url) + '" allowfullscreen loading="lazy"></iframe></div>'));
+    inner.appendChild(el('<div class="anniv-slide-label">' + esc(v.label) + (OLD_VERSIONS.length > 1 ? ' · ' + (slide + 1) + ' / ' + OLD_VERSIONS.length : '') + '</div>'));
     setStage(inner);
 
-    var nextLabel = (slide + 1 < OLD_VERSIONS.length) ? 'Next →' : 'Continue';
+    var nextLabel = (slide + 1 < OLD_VERSIONS.length) ? 'NEXT ▶' : 'PRESS START ▶';
     var btn = el('<button class="anniv-btn">' + nextLabel + '</button>');
     btn.onclick = function () {
       if (slide + 1 < OLD_VERSIONS.length) { state.slide = slide + 1; renderSlideshow(); }
@@ -276,18 +292,18 @@
 
   function renderRules() {
     var inner = el('<div class="anniv-inner"></div>');
-    inner.appendChild(el('<h1>Rules of the rewards</h1>'));
-    inner.appendChild(el('<p class="lead">Read carefully — your reward depends on how many you get right and how early you finish.</p>'));
+    inner.appendChild(stageLabel('STAGE 2 — REWARDS'));
+    inner.appendChild(el('<div class="anniv-title">HOW TO WIN</div>'));
+    inner.appendChild(el('<div class="anniv-sub">Read the prize table — your reward depends on your score and how early you finish.</div>'));
 
-    var list = el('<div class="rules-list"></div>');
     RULES.forEach(function (r) {
-      list.appendChild(el('<div class="rule"><span class="r-head">' + esc(r.head) + '</span><span class="r-body">' + esc(r.body) + '</span></div>'));
+      var row = el('<div class="anniv-rule"><span class="trophy">★</span><span><div class="r-head">' + esc(r.head) + '</div><div class="r-body">' + esc(r.body) + '</div></span></div>');
+      inner.appendChild(row);
     });
-    inner.appendChild(list);
-    inner.appendChild(el('<div class="rules-note">' + esc(RULES_NOTE) + '</div>'));
+    inner.appendChild(el('<div class="anniv-rules-note">' + esc(RULES_NOTE) + '</div>'));
     setStage(inner);
 
-    var btn = el('<button class="anniv-btn">I understand — start the quiz</button>');
+    var btn = el('<button class="anniv-btn">START THE QUIZ ▶</button>');
     btn.onclick = function () { startQuiz(); };
     setFoot([btn]);
   }
@@ -307,7 +323,8 @@
     var total = state.questions.length;
 
     var inner = el('<div class="anniv-inner"></div>');
-    inner.appendChild(el('<div class="quiz-counter">Question ' + (i + 1) + ' of ' + total + '</div>'));
+    inner.appendChild(stageLabel('STAGE 3 — THE QUIZ'));
+    inner.appendChild(el('<div class="quiz-counter">QUESTION ' + (i + 1) + ' / ' + total + '</div>'));
     inner.appendChild(el('<div class="quiz-q">' + esc(q.q) + '</div>'));
 
     var opts = el('<div class="quiz-opts"></div>');
@@ -332,17 +349,17 @@
     inner.appendChild(opts);
     setStage(inner);
 
-    var back = el('<button class="anniv-btn ghost">Back</button>');
+    var back = el('<button class="anniv-btn ghost">◀ BACK</button>');
     back.onclick = function () {
       if (i === 0) { renderRules(); } else { state.qIndex = i - 1; state.trapped = false; renderQuiz(); }
     };
 
-    var next = el('<button class="anniv-btn">' + (i + 1 === total ? 'Finish' : 'Next') + '</button>');
+    var next = el('<button class="anniv-btn">' + (i + 1 === total ? 'FINISH ▶' : 'NEXT ▶') + '</button>');
     next.onclick = function () {
       if (state.trapped) return;
       if (state.answers[i] == null) {
-        next.textContent = 'Pick an answer';
-        setTimeout(function () { if (next.parentNode) next.textContent = (i + 1 === total ? 'Finish' : 'Next'); }, 1400);
+        next.textContent = 'PICK ONE';
+        setTimeout(function () { if (next.parentNode) next.textContent = (i + 1 === total ? 'FINISH ▶' : 'NEXT ▶'); }, 1400);
         return;
       }
       if (i + 1 < total) { state.qIndex = i + 1; state.trapped = false; renderQuiz(); }
@@ -358,22 +375,24 @@
 
   function renderLoading() {
     var inner = el('<div class="anniv-inner"></div>');
-    inner.appendChild(el('<h1 style="text-align:center">Finishing up…</h1>'));
-    inner.appendChild(el('<div class="result-reward">Checking your result…</div>'));
+    inner.appendChild(stageLabel('CALCULATING'));
+    inner.appendChild(el('<div class="anniv-title">SCORING…</div>'));
+    inner.appendChild(el('<div class="anniv-sub">Contacting the leaderboard…</div>'));
     setStage(inner);
-    var done = el('<button class="anniv-btn">Done</button>');
+    var done = el('<button class="anniv-btn">EXIT</button>');
     done.onclick = close;
     setFoot([done]);
   }
 
   function renderAlreadyDone(done) {
     var inner = el('<div class="anniv-inner"></div>');
-    inner.appendChild(el('<h1 style="text-align:center">You already participated</h1>'));
-    inner.appendChild(el('<div class="result-score">' + done.score + ' / ' + QUIZ.length + '</div>'));
-    inner.appendChild(el('<div class="result-label">correct answers</div>'));
-    inner.appendChild(el('<div class="result-reward">Your reward: ' + esc(done.reward) + '</div>'));
+    inner.appendChild(stageLabel('GAME CLEAR'));
+    inner.appendChild(el('<div class="anniv-clear">YOU ALREADY PLAYED</div>'));
+    inner.appendChild(el('<div class="anniv-score">' + done.score + ' / ' + QUIZ.length + '</div>'));
+    inner.appendChild(el('<div class="anniv-score-label">correct answers</div>'));
+    inner.appendChild(el('<div class="anniv-reward">' + esc(done.reward) + '</div>'));
     setStage(inner);
-    var b = el('<button class="anniv-btn">Done</button>');
+    var b = el('<button class="anniv-btn">EXIT</button>');
     b.onclick = close;
     setFoot([b]);
   }
@@ -381,30 +400,35 @@
   function renderResult(data) {
     var inner = el('<div class="anniv-inner"></div>');
     if (data.error === 'auth_required') {
-      inner.appendChild(el('<h1 style="text-align:center">Sign in to claim your reward</h1>'));
-      inner.appendChild(el('<p class="lead" style="text-align:center">You need an account to earn an anniversary reward.</p>'));
+      inner.appendChild(stageLabel('LOCKED'));
+      inner.appendChild(el('<div class="anniv-title">SIGN IN TO CLAIM</div>'));
+      inner.appendChild(el('<div class="anniv-sub">You need an account to earn an anniversary reward.</div>'));
     } else if (data.error === 'not_released') {
-      inner.appendChild(el('<h1 style="text-align:center">Coming soon</h1>'));
-      inner.appendChild(el('<p class="lead" style="text-align:center">The anniversary game is not open yet.</p>'));
+      inner.appendChild(stageLabel('SOON'));
+      inner.appendChild(el('<div class="anniv-title">COMING SOON</div>'));
+      inner.appendChild(el('<div class="anniv-sub">The anniversary game is not open yet.</div>'));
     } else if (data.error === 'not_configured') {
-      inner.appendChild(el('<h1 style="text-align:center">Not ready yet</h1>'));
-      inner.appendChild(el('<p class="lead" style="text-align:center">The quiz is still being set up.</p>'));
+      inner.appendChild(stageLabel('SETUP'));
+      inner.appendChild(el('<div class="anniv-title">NOT READY YET</div>'));
+      inner.appendChild(el('<div class="anniv-sub">The quiz is still being set up.</div>'));
     } else if (data.error) {
-      inner.appendChild(el('<h1 style="text-align:center">Something went wrong</h1>'));
-      inner.appendChild(el('<p class="lead" style="text-align:center">Please try again later.</p>'));
+      inner.appendChild(stageLabel('ERROR'));
+      inner.appendChild(el('<div class="anniv-title">SOMETHING BROKE</div>'));
+      inner.appendChild(el('<div class="anniv-sub">Please try again later.</div>'));
     } else {
       var already = data.result === 'already_submitted';
-      inner.appendChild(el('<h1 style="text-align:center">' + (already ? 'You already participated' : 'You finished!') + '</h1>'));
-      inner.appendChild(el('<div class="result-score">' + data.score + ' / ' + QUIZ.length + '</div>'));
-      inner.appendChild(el('<div class="result-label">correct answers</div>'));
-      var rewardText = 'Your reward: ' + data.reward;
-      if (data.rank) rewardText += ' — you were #' + data.rank + ' to finish';
-      if (data.mode === 'test') rewardText += ' (test mode)';
-      inner.appendChild(el('<div class="result-reward">' + esc(rewardText) + '</div>'));
+      inner.appendChild(stageLabel('GAME CLEAR'));
+      inner.appendChild(el('<div class="anniv-clear">' + (already ? 'YOU ALREADY PLAYED' : 'CONGRATULATIONS!') + '</div>'));
+      inner.appendChild(el('<div class="anniv-score">' + data.score + ' / ' + QUIZ.length + '</div>'));
+      inner.appendChild(el('<div class="anniv-score-label">correct answers</div>'));
+      var rewardText = data.reward;
+      if (data.rank) rewardText += ' · YOU WERE #' + data.rank;
+      if (data.mode === 'test') rewardText += ' · TEST MODE';
+      inner.appendChild(el('<div class="anniv-reward">' + esc(rewardText) + '</div>'));
       if (!ANNIV_PENDING && !already) setDoneFlag({ score: data.score, reward: data.reward, rank: data.rank });
     }
     setStage(inner);
-    var b = el('<button class="anniv-btn">Done</button>');
+    var b = el('<button class="anniv-btn">EXIT</button>');
     b.onclick = close;
     setFoot([b]);
   }
@@ -438,10 +462,11 @@
         ensureRoot();
         shell('FIRST ANNIVERSARY');
         var inner = el('<div class="anniv-inner"></div>');
-        inner.appendChild(el('<h1>First Anniversary</h1>'));
-        inner.appendChild(el('<p class="lead">The celebration is coming soon — check back on September 20!</p>'));
+        inner.appendChild(stageLabel('SOON'));
+        inner.appendChild(el('<div class="anniv-title">COMING SOON</div>'));
+        inner.appendChild(el('<div class="anniv-sub">The celebration opens on September 20 — check back then!</div>'));
         setStage(inner);
-        var b = el('<button class="anniv-btn">Got it</button>');
+        var b = el('<button class="anniv-btn">GOT IT</button>');
         b.onclick = close;
         setFoot([b]);
         return;
