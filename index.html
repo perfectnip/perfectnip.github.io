@@ -1439,6 +1439,8 @@ html,body{
 #anniversary-modal .modal{max-width:440px}
 #anniversary-modal .modal-title{color:#ffc14d;font-weight:600}
 #anniversary-modal .modal-body{text-align:center;font-size:17px;font-weight:600;padding:26px 22px}
+#anniversary-modal .anniv-play-btn{display:inline-flex;align-items:center;justify-content:center;margin-top:16px;padding:11px 28px;border:0;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+#anniversary-modal .anniv-play-btn:hover{filter:brightness(1.12)}
 .modal-header{
   display:flex;align-items:center;justify-content:space-between;
   padding:18px 22px;border-bottom:1px solid var(--border-light);flex-shrink:0;
@@ -3542,12 +3544,14 @@ body.ui-hidden .top-bar > .tb-actions > *:not(.hide-ui-btn) *::after{
     </div>
     <div class="modal-body">
       <p style="margin:0">Win PERMANENT PREMIUM PLUS!</p>
+      <button type="button" class="anniv-play-btn" onclick="closeAnniversary();JqrgAnniversary.launch()">Play</button>
     </div>
   </div>
 </div>
 
 <script src="/js/jqrg-particles.js?v=71" defer></script>
 <script src="/js/openGame.js?v=72"></script>
+<script src="/js/jqrg-anniversary.js?v=1"></script>
           <script>
 function _iA(){
   if(window.__jqrgIsAuthed){try{return !!window.__jqrgIsAuthed()}catch(e){}}
