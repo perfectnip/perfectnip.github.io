@@ -66,10 +66,17 @@
   /* ------------------------------------------------------------------ *
    * Content: old site versions + music
    * ------------------------------------------------------------------ */
+  // Old versions of the site are shown as iframed pages, ordered oldest →
+  // newest. MUSIC_URL is the nostalgic/dreamcore loop for the archive stage.
   var OLD_VERSIONS = [
-    { label: "The very first version", url: "https://web.archive.org/web/2025/http://jimmyqrg.github.io/" }
+    { label: "May 2025 — the very first version", url: "/anniversary/versions/may-2025.html" }
   ];
-  var MUSIC_URL = null; // set when a royalty-free dreamcore loop is sourced
+  var MUSIC_URL = '/music/comfort-chain.mp3';
+
+  // Music BPM (comfort-chain.mp3 = 110). Used to pulse the archive display
+  // on-beat while the slideshow plays.
+  var MUSIC_BPM = 110;
+  var BEAT_MS = Math.round(60000 / MUSIC_BPM);
 
   var WORKER_URL = (function () {
     try {
@@ -148,6 +155,7 @@
   var root = null;
   var audio = null;
   var state = null;
+  var beatTimer = null;
 
   function ensureRoot() {
     if (root) return root;
@@ -182,7 +190,8 @@
       '#anniv-root .anniv-btn:active{transform:translateY(1px) scale(.98)}',
       '#anniv-root .anniv-btn.ghost{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.25);box-shadow:none;text-shadow:none}',
       '#anniv-root .anniv-foot{display:flex;justify-content:space-between;gap:12px;padding:16px 20px;border-top:1px solid rgba(168,85,247,.3);z-index:1}',
-      '#anniv-root .anniv-crt{border:10px solid #1a0f2e;border-radius:14px;box-shadow:0 0 0 2px #a855f7,0 0 26px rgba(168,85,247,.5),inset 0 0 30px rgba(0,0,0,.7);background:#000;overflow:hidden;margin:0 auto 14px;max-width:640px}',
+      '#anniv-root .anniv-crt{border:10px solid #1a0f2e;border-radius:14px;box-shadow:0 0 0 2px #a855f7,0 0 26px rgba(168,85,247,.5),inset 0 0 30px rgba(0,0,0,.7);background:#000;overflow:hidden;margin:0 auto 14px;max-width:640px;transition:box-shadow .14s ease,border-color .14s ease}',
+      '#anniv-root .anniv-crt.beat{border-color:#ff4dd5;box-shadow:0 0 0 3px #ff4dd5,0 0 44px rgba(255,77,213,.85),0 0 20px rgba(255,193,77,.5),inset 0 0 34px rgba(0,0,0,.7)}',
       '#anniv-root .anniv-crt iframe{display:block;width:100%;height:56vh;border:0;background:#000}',
       '#anniv-root .anniv-slide-label{font-size:16px;color:rgba(236,230,255,.65);text-align:center;margin-bottom:18px}',
       '#anniv-root .anniv-rule{display:flex;align-items:center;gap:14px;padding:12px 16px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.25);border-radius:10px;margin-bottom:10px}',
@@ -245,11 +254,28 @@
     } catch (_) {}
   }
 
+  function startBeatPulse() {
+    stopBeatPulse();
+    function tick() {
+      var el = root ? root.querySelector('.anniv-crt') : null;
+      if (!el) return;
+      el.classList.add('beat');
+      setTimeout(function () { if (el.parentNode) el.classList.remove('beat'); }, 140);
+    }
+    beatTimer = setInterval(tick, BEAT_MS);
+    tick();
+  }
+
+  function stopBeatPulse() {
+    if (beatTimer) { clearInterval(beatTimer); beatTimer = null; }
+  }
+
   function stopMusic() {
     if (audio) { try { audio.pause(); } catch (_) {} audio = null; }
   }
 
   function close() {
+    stopBeatPulse();
     stopMusic();
     if (root) { root.remove(); root = null; }
   }
@@ -288,6 +314,7 @@
     };
     setFoot([btn]);
     startMusic();
+    startBeatPulse();
   }
 
   function renderRules() {
