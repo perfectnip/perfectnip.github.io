@@ -541,12 +541,7 @@
     }
 
     const autoSetting = localStorage.getItem("autoAnnouncement") || "always";
-
-    if (autoSetting === "always") {
-      window.addEventListener('load', openModal);
-    } else if (autoSetting === "big" && hasBigAnnouncement) {
-      window.addEventListener('load', openModal);
-    }
+    // Announcement auto-popup disabled for the archived snapshot.
 
     openBtn.addEventListener('click', openModal);
     closeBtn.addEventListener('click', closeModal);
