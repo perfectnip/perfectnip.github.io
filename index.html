@@ -4987,14 +4987,23 @@ document.addEventListener('click',function(e){
   var modal=document.getElementById('announcement-modal');
   if(e.target===modal) closeAnnouncement();
 });
+// Capture the ?anniversary test flag at parse time — the SPA's updateUrl()
+// rewrites the URL (history.replaceState) and strips the query string before
+// DOMContentLoaded fires, so we must read it now.
+var __jqrgForceAnniversary=/[?&]anniversary=/.test(location.search);
 var __anniversaryShown=false;
 var ANNIVERSARY_START=new Date(2026,8,20,0,0,0); // Sep 20, 2026 local time
 function maybeShowAnniversary(){
   try{
+    var forceParam=__jqrgForceAnniversary || /[?&]anniversary=/.test(location.search);
+    if(forceParam){
+      document.getElementById('anniversary-modal').classList.add('open');
+      __anniversaryShown=true;
+      return;
+    }
     if(localStorage.getItem('jqrgAnniversaryDismissed')==='1') return;
     var now=new Date();
-    var forceParam=/[?&]anniversary=/.test(location.search);
-    if(forceParam || now.getTime()>=ANNIVERSARY_START.getTime()){
+    if(now.getTime()>=ANNIVERSARY_START.getTime()){
       document.getElementById('anniversary-modal').classList.add('open');
       __anniversaryShown=true;
     }
