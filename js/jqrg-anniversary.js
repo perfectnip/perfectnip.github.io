@@ -56,7 +56,7 @@
   var RULES = [
     { head: "First 5", body: "score 9+ → PERMANENT PREMIUM PLUS" },
     { head: "First 20", body: "score 9+ → 30-day Premium Plus, then permanent Premium" },
-    { head: "First 20", body: "score 8 (not all 12) → 1-year Premium" },
+    { head: "First 20", body: "score 8 → 1-year Premium" },
     { head: "First 50", body: "score 6–7 → 4-month Premium" },
     { head: "First 100", body: "exactly 5 correct → 2-month Premium" },
     { head: "Everyone else", body: "1-month Premium" }
@@ -159,6 +159,7 @@
   var audio = null;
   var state = null;
   var beatTimer = null;
+  var beatCount = 0;
 
   function ensureRoot() {
     if (root) return root;
@@ -193,9 +194,9 @@
       '#anniv-root .anniv-btn:active{transform:translateY(1px) scale(.98)}',
       '#anniv-root .anniv-btn.ghost{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.25);box-shadow:none;text-shadow:none}',
       '#anniv-root .anniv-foot{display:flex;justify-content:space-between;gap:12px;padding:16px 20px;border-top:1px solid rgba(168,85,247,.3);z-index:1}',
-      '#anniv-root .anniv-crt{border:10px solid #1a0f2e;border-radius:14px;box-shadow:0 0 0 2px #a855f7,0 0 26px rgba(168,85,247,.5),inset 0 0 30px rgba(0,0,0,.7);background:#000;overflow:hidden;margin:0 auto 14px;max-width:640px;transition:box-shadow .14s ease,border-color .14s ease}',
+      '#anniv-root .anniv-crt{border:10px solid #1a0f2e;border-radius:14px;box-shadow:0 0 0 2px #a855f7,0 0 26px rgba(168,85,247,.5),inset 0 0 30px rgba(0,0,0,.7);background:#000;overflow:hidden;margin:0 auto 14px;max-width:900px;height:70vh;transition:box-shadow .14s ease,border-color .14s ease}',
       '#anniv-root .anniv-crt.beat{border-color:#ff4dd5;box-shadow:0 0 0 3px #ff4dd5,0 0 44px rgba(255,77,213,.85),0 0 20px rgba(255,193,77,.5),inset 0 0 34px rgba(0,0,0,.7)}',
-      '#anniv-root .anniv-crt iframe{display:block;width:100%;height:56vh;border:0;background:#000}',
+      '#anniv-root .anniv-crt iframe{display:block;width:117.65%;height:117.65%;border:0;background:#000;transform:scale(0.85);transform-origin:top left}',
       '#anniv-root .anniv-slide-label{font-size:16px;color:rgba(236,230,255,.65);text-align:center;margin-bottom:18px}',
       '#anniv-root .anniv-rule{display:flex;align-items:center;gap:14px;padding:12px 16px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.25);border-radius:10px;margin-bottom:10px}',
       '#anniv-root .anniv-rule .trophy{font-family:"Press Start 2P",monospace;font-size:15px;color:#ffc14d;text-shadow:0 0 8px rgba(255,193,77,.6);flex-shrink:0}',
@@ -247,11 +248,16 @@
   }
 
   function startMusic() {
-    if (!MUSIC_URL || audio) return;
+    if (!MUSIC_URL) return;
+    if (audio) { startBeatPulse(); return; }
     try {
       audio = new Audio(MUSIC_URL);
       audio.loop = true;
       audio.volume = 0.5;
+      audio.addEventListener('playing', function onPlay() {
+        audio.removeEventListener('playing', onPlay);
+        startBeatPulse();
+      });
       var p = audio.play();
       if (p && p.catch) p.catch(function () {});
     } catch (_) {}
@@ -259,14 +265,24 @@
 
   function startBeatPulse() {
     stopBeatPulse();
+    beatCount = 0;
     function tick() {
       var el = root ? root.querySelector('.anniv-crt') : null;
-      if (!el) return;
-      el.classList.add('beat');
-      setTimeout(function () { if (el.parentNode) el.classList.remove('beat'); }, 140);
+      if (el) {
+        el.classList.add('beat');
+        setTimeout(function () { if (el.parentNode) el.classList.remove('beat'); }, 140);
+      }
+      beatCount++;
+      if (beatCount % 8 === 0) advanceSlide();
     }
     beatTimer = setInterval(tick, BEAT_MS);
-    tick();
+  }
+
+  function advanceSlide() {
+    if (OLD_VERSIONS.length <= 1) return;
+    if (!state || state.questions) return;
+    state.slide = (state.slide + 1) % OLD_VERSIONS.length;
+    renderSlideshow();
   }
 
   function stopBeatPulse() {
@@ -309,15 +325,12 @@
     inner.appendChild(el('<div class="anniv-slide-label">' + esc(v.label) + (OLD_VERSIONS.length > 1 ? ' · ' + (slide + 1) + ' / ' + OLD_VERSIONS.length : '') + '</div>'));
     setStage(inner);
 
-    var nextLabel = (slide + 1 < OLD_VERSIONS.length) ? 'NEXT ▶' : 'PRESS START ▶';
-    var btn = el('<button class="anniv-btn">' + nextLabel + '</button>');
+    var btn = el('<button class="anniv-btn">SKIP ▶</button>');
     btn.onclick = function () {
-      if (slide + 1 < OLD_VERSIONS.length) { state.slide = slide + 1; renderSlideshow(); }
-      else renderRules();
+      stopBeatPulse();
+      renderRules();
     };
     setFoot([btn]);
-    startMusic();
-    startBeatPulse();
   }
 
   function renderRules() {
@@ -505,6 +518,7 @@
       shell('FIRST ANNIVERSARY');
       state = { slide: 0, questions: null, answers: null, qIndex: 0, trapped: false };
       renderSlideshow();
+      startMusic();
     }
   };
 })();
