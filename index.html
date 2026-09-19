@@ -1436,11 +1436,27 @@ html,body{
 .modal-overlay.open .modal{transform:translateY(0) scale(1);opacity:1}
 #announcement-modal .modal{max-width:520px}
 #announcement-modal .modal-body a{color:#fff !important;text-decoration:underline}
-#anniversary-modal .modal{max-width:440px}
-#anniversary-modal .modal-title{color:#ffc14d;font-weight:600}
-#anniversary-modal .modal-body{text-align:center;font-size:17px;font-weight:600;padding:26px 22px}
-#anniversary-modal .anniv-play-btn{display:inline-flex;align-items:center;justify-content:center;margin-top:16px;padding:11px 28px;border:0;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
-#anniversary-modal .anniv-play-btn:hover{filter:brightness(1.12)}
+#anniversary-modal .modal{max-width:580px;border:2px solid rgba(255,193,77,.35);background:radial-gradient(120% 90% at 50% 0%,#2a1140 0%,#14071f 55%,#0a0312 100%)}
+#anniversary-modal .modal-close{position:absolute;top:12px;right:14px;z-index:10;color:rgba(255,255,255,.6)}
+#anniversary-modal .anniv-body{position:relative;text-align:center;padding:34px 30px 32px;overflow:hidden}
+#anniversary-modal .anniv-cake{font-size:80px;line-height:1;margin-bottom:12px;animation:cakeBounce 2.4s ease-in-out infinite;filter:drop-shadow(0 8px 18px rgba(255,193,77,.35))}
+@keyframes cakeBounce{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-9px) rotate(3deg)}}
+#anniversary-modal .anniv-title{font-family:"Press Start 2P",monospace;font-size:17px;line-height:1.5;color:#fff;text-shadow:0 0 16px rgba(255,193,77,.8),0 0 32px rgba(255,77,184,.4);margin:0 0 12px}
+#anniversary-modal .anniv-sub{color:rgba(255,255,255,.82);font-size:15px;margin:0 0 16px}
+#anniversary-modal .anniv-prize{font-size:21px;font-weight:800;margin:0 0 12px;background:linear-gradient(90deg,#ffc14d,#ff4db8,#8a4dff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+#anniversary-modal .anniv-hint{color:rgba(255,255,255,.6);font-size:13.5px;line-height:1.5;margin:0 0 22px}
+#anniversary-modal .anniv-play-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 34px;border:2px solid rgba(255,193,77,.5);border-radius:12px;background:linear-gradient(135deg,#ff9d00,#ff4db8);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 0 22px rgba(255,77,184,.45);transition:transform .12s ease,box-shadow .2s ease,filter .2s ease}
+#anniversary-modal .anniv-play-btn:hover{filter:brightness(1.12);transform:translateY(-2px);box-shadow:0 0 32px rgba(255,77,184,.7)}
+#anniversary-modal .anniv-play-btn:active{transform:translateY(0) scale(.97)}
+#anniversary-modal .anniv-confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#anniversary-modal .anniv-confetti span{position:absolute;top:-12%;font-size:18px;animation:confettiFall linear infinite}
+#anniversary-modal .anniv-confetti span:nth-child(1){left:8%;animation-duration:5.5s;animation-delay:0s}
+#anniversary-modal .anniv-confetti span:nth-child(2){left:24%;animation-duration:6.5s;animation-delay:.6s}
+#anniversary-modal .anniv-confetti span:nth-child(3){left:40%;animation-duration:5s;animation-delay:1.2s}
+#anniversary-modal .anniv-confetti span:nth-child(4){left:56%;animation-duration:7s;animation-delay:.3s}
+#anniversary-modal .anniv-confetti span:nth-child(5){left:72%;animation-duration:5.8s;animation-delay:1.8s}
+#anniversary-modal .anniv-confetti span:nth-child(6){left:88%;animation-duration:6.2s;animation-delay:.9s}
+@keyframes confettiFall{to{transform:translateY(120vh) rotate(720deg)}}
 .modal-header{
   display:flex;align-items:center;justify-content:space-between;
   padding:18px 22px;border-bottom:1px solid var(--border-light);flex-shrink:0;
@@ -3538,13 +3554,15 @@ body.ui-hidden .top-bar > .tb-actions > *:not(.hide-ui-btn) *::after{
 
 <div class="modal-overlay" id="anniversary-modal">
   <div class="modal">
-    <div class="modal-header">
-      <h3 class="modal-title">First Anniversary</h3>
-      <button class="modal-close" onclick="closeAnniversary()">&times;</button>
-    </div>
-    <div class="modal-body">
-      <p style="margin:0">Win PERMANENT PREMIUM PLUS!</p>
-      <button type="button" class="anniv-play-btn" onclick="closeAnniversary();JqrgAnniversary.launch()">Play</button>
+    <button class="modal-close" onclick="closeAnniversary()">&times;</button>
+    <div class="anniv-body">
+      <div class="anniv-confetti"><span>🎉</span><span>✨</span><span>🎊</span><span>🎈</span><span>✨</span><span>🎉</span></div>
+      <div class="anniv-cake">🎂</div>
+      <h3 class="anniv-title">First Anniversary</h3>
+      <p class="anniv-sub">Celebrating 1 year of JQRG! 🎉</p>
+      <p class="anniv-prize">Win PERMANENT PREMIUM PLUS!</p>
+      <p class="anniv-hint">Play the anniversary game — answer 12 questions to claim your reward.</p>
+      <button type="button" class="anniv-play-btn" onclick="closeAnniversary();JqrgAnniversary.launch()">🎮 Play</button>
     </div>
   </div>
 </div>
