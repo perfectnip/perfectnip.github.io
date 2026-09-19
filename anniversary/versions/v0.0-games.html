@@ -5,22 +5,24 @@
   <meta charset="UTF-8">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Home | Infinite Campus</title>
+  <title>JimmyQrg.github.io</title>
   <link rel="icon" type="image/png" href="infinite-campus.png">
   <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
       margin: 0;
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
       background: #0b1020 url("background2.png") no-repeat center center fixed;
       background-size: cover;
       color: white;
       font-family: "Josefin Sans", sans-serif;
       text-align: center;
+      overflow-y: auto;
+      padding: 80px 20px;
     }
     h1 {
       margin-bottom: 40px;
@@ -71,47 +73,47 @@
 </head>
 <body>
   <!-- Fixed Back button -->
-  <a href="https://jimmyqrg.github.io/?page=extend" class="back-btn">⬅ Back</a>
+  <a class="back-btn">⬅ Back</a>
 
   <h1>JQRG Games</h1>
 
-  <button class="btn" onclick="openGame('https://student.jimmyqrg.com/bridd-jump')">
+  <button class="btn">
     BRIDD JUMP ORIGINAL GAME
   </button>
 
-  <button class="btn" onclick="location.href='https://student.jimmyqrg.com/jqrg-games/eaglercraft/?back=https://student.jimmyqrg.com/jqrg-games/J4mT9vQ2xZpL6rFwK1bHs8yC0nAeR7uYdG.html'">
+  <button class="btn">
     EAGLERCRAFT
   </button>
 
-  <button class="btn" onclick="openGame('https://student.jimmyqrg.com/wordle')">
+  <button class="btn">
     INFINITE WORDLE ULTIMATE
   </button>
 
-  <button class="btn" onclick="openGame('https://student.jimmyqrg.com/wordle/no-word-detection/')">
+  <button class="btn">
     WORDLE WITHOUT WORD DETECTION
   </button>
 
-  <button class="btn" onclick="openGame('https://student.jimmyqrg.com/a-dance-of-fire-and-ice')">
+  <button class="btn">
     A DANCE OF FIRE AND ICE
   </button>
 
-  <button class="btn" onclick="openGame('https://student.jimmyqrg.com/undertale')">
+  <button class="btn">
     UNDERTALE
   </button>
 
-  <button class="btn" onclick="openGame('https://student.jimmyqrg.com/sound-effects')">
+  <button class="btn">
     SOUND EFFECTS PLAYER
   </button>
 
-  <button class="btn" onclick="openGame('https://student.jimmyqrg.com/slope-two-players')">
+  <button class="btn">
     SLOPE 2 PLAYERS
   </button>
 
-  <button class="btn" onclick="openGame('https://student.jimmyqrg.com/ghost-train')">
+  <button class="btn">
     GHOST TRAIN CUBE (NOT FINISHED)
   </button>
 
-  <p>Email <a href="mailto:ikunbeautiful@gmail.com" style="color:white;">ikunbeautiful@gmail.com</a> if you wish to add more games. I will do my best to add them.</p>
+  <p>Email <a style="color:white;">ikunbeautiful@gmail.com</a> if you wish to add more games. I will do my best to add them.</p>
 
   <script>
     function openGame(url) {

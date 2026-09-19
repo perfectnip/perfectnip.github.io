@@ -25,7 +25,7 @@
 
     /* ---------- Base ---------- */
     * { box-sizing: border-box; font-family: var(--font); }
-    html,body { height: 100%; }
+    html,body { min-height: 100%; }
     body {
       margin: 0;
       min-height: 100vh;
@@ -38,6 +38,7 @@
       color: white;
       font-family: var(--font);
       text-align: center;
+      overflow-y: auto;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
@@ -382,29 +383,29 @@
 
   <h2>MAIN PORTAL</h2>
 
-  <a href="jqrg-games/"><button class="btn">JQRG UNBLOCKED GAMES</button></a>
+  <a><button class="btn">JQRG UNBLOCKED GAMES</button></a>
   <br>
-  <a href="strategies/"><button class="btn">SCHOOL CHROMEBOOK SPECIAL STRATEGIES</button></a>
+  <a><button class="btn">SCHOOL CHROMEBOOK SPECIAL STRATEGIES</button></a>
   <br>
-  <a href="tools/"><button class="btn">TOOLS</button></a>
+  <a><button class="btn">TOOLS</button></a>
   <br>
 
   <h1>OTHERS</h1>
 
-  <a href="download/"><button class="btn">DOWNLOAD FILES</button></a>
+  <a><button class="btn">DOWNLOAD FILES</button></a>
   <br>
-  <a href="unblocks/"><button class="btn">OTHER UNBLOCKS</button></a>
+  <a><button class="btn">OTHER UNBLOCKS</button></a>
   <br>
-  <a href="test/jqrgd.html"><button class="btn">JQRGD TEST</button></a>
+  <a><button class="btn">JQRGD TEST</button></a>
   <br>
   
-  <p><span class="announcement-link">Announcements (Click to reopen)</span><br><br>If you want to join me and make the website together, click <a href="join/" target="_blank" style="color:#4d8cff; text-decoration:underline;">here</a>!</p>
+  <p><span class="announcement-link">Announcements (Click to reopen)</span><br><br>If you want to join me and make the website together, click <a target="_blank" style="color:#4d8cff; text-decoration:underline;">here</a>!</p>
 
   <div class="modal-overlay" id="announcementModal">
     <div class="modal-content" id="announcementContent">
       <span class="close-btn" id="closeModal">&times;</span>
       <h2 style="text-align:center;">📢 Announcements</h2>
-      <p>More informations and updates can be found <a href="https://chat.jiushifen.com/invite/haG5F-FQ" target="_blank" style="color:#4d8cff; text-decoration:underline;">here</a>. (You'll have to sign in first)</p>
+      <p>More informations and updates can be found <a target="_blank" style="color:#4d8cff; text-decoration:underline;">here</a>. (You'll have to sign in first)</p>
       <hr style="border: 1px solid rgba(255,255,255,0.3);">
       <p>✨ Latest updates:</p>
         <ul>
@@ -441,7 +442,7 @@
       <br><br><br>
 
       <label><b>Pop up</b></label>
-      <button class="btn" onclick="openGame('https://student.jimmyqrg.com?page=extend')">JIMMYQRG</button>
+      <button class="btn">JIMMYQRG</button>
       <br><br><br>
       
       <label><b>Install App</b></label><br>
