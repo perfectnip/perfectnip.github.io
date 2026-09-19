@@ -89,6 +89,9 @@
     return 'https://deepseek-proxy.ikunbeautiful.workers.dev';
   })();
 
+  // Anniversary quiz backend lives on the jchat server (not the Worker).
+  var ANNIV_URL = 'https://discord.jimmyqrg.com/api/anniversary/submit';
+
   /* ------------------------------------------------------------------ *
    * Helpers
    * ------------------------------------------------------------------ */
@@ -487,7 +490,7 @@
     var headers = { 'Content-Type': 'application/json' };
     var tok = getToken();
     if (tok) headers['Authorization'] = 'Bearer ' + tok;
-    fetch(WORKER_URL + '/v1/anniversary-submit', {
+    fetch(ANNIV_URL, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({ answers: answers })
