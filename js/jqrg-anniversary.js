@@ -1,17 +1,17 @@
 /* jqrg-anniversary.js — First Anniversary experience
- * Slideshow of old site versions + dreamcore music -> Rules -> Quiz -> Results.
+ * Cinematic fullscreen "archive trailer" -> Rules -> Quiz -> Results.
  * Self-contained; exposes window.JqrgAnniversary.launch().
  *
  * Anti-cheat: the correct answers are NOT in this file. The client only sends
- * the user's answers to the worker, which scores them server-side and returns
- * only the total score + reward (never which answers were right/wrong).
+ * the user's answers to the jchat server, which scores them server-side and
+ * returns only the total score + reward (never which answers were right/wrong).
  */
 (function () {
   'use strict';
   if (window.JqrgAnniversary) return;
 
   /* Pending gate. Flip to false on release day (keep in sync with the
-   * worker's ANNIVERSARY_RELEASED flag). While pending, only jimmyqrg can
+   * server's ANNIVERSARY_RELEASED flag). While pending, only jimmyqrg can
    * open the experience and he can try infinitely (test mode). */
   var ANNIV_PENDING = true;
   var OWNER_USERNAMES = ['jimmyqrg'];
@@ -66,8 +66,7 @@
   /* ------------------------------------------------------------------ *
    * Content: old site versions + music
    * ------------------------------------------------------------------ */
-  // Old versions of the site are shown as iframed pages, ordered oldest →
-  // newest. MUSIC_URL is the nostalgic/dreamcore loop for the archive stage.
+  // Old versions of the site, shown as iframed pages, oldest -> newest.
   var OLD_VERSIONS = [
     { label: "V0.0 — Home", url: "/anniversary/versions/v0.0-home.html" },
     { label: "V0.0 — Games", url: "/anniversary/versions/v0.0-games.html" },
@@ -76,10 +75,20 @@
   ];
   var MUSIC_URL = '/music/comfort-chain.mp3';
 
-  // Music BPM (comfort-chain.mp3 = 110). Used to pulse the archive display
-  // on-beat while the slideshow plays.
+  // Music BPM (comfort-chain.mp3 = 110). The archive is cut on the beat.
   var MUSIC_BPM = 110;
-  var BEAT_MS = Math.round(60000 / MUSIC_BPM);
+  var BEAT_MS = 60000 / MUSIC_BPM;              // 545.45 ms
+
+  /* Cinematic timings (all in ms of "game time") */
+  var LAG_MS = 5000;                            // glitch/lag before the game
+  var PRE_BLACK_MS = 1000;                      // hard blackout before music
+  var MAIN_START_MS = 37100;                    // song main part @ 00:37.010
+  var PAGE_BEATS = 8;                           // 7 on-screen + blackout beat
+  var ARCHIVE_MS = OLD_VERSIONS.length * PAGE_BEATS * BEAT_MS;  // 32 beats
+  var MAX_AUDIO_WAIT_MS = 6000;                 // hold the blackout for the music
+  var TEXT_APPEAR_MS = 9000;                    // "slowly appear"
+  var BLOOM_UP_MS = 20000;                      // bloom 0 -> 1
+  var BLOOM_DOWN_MS = 30000;                    // bloom 1 -> 0, then fade out
 
   var WORKER_URL = (function () {
     try {
@@ -155,14 +164,20 @@
     try { localStorage.setItem('jqrgAnnivDone', JSON.stringify(data)); } catch (_) {}
   }
 
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
   /* ------------------------------------------------------------------ *
    * DOM / render
    * ------------------------------------------------------------------ */
   var root = null;
   var audio = null;
   var state = null;
-  var beatTimer = null;
-  var beatCount = 0;
+  var cine = null;      // archive-trailer clock
+  var lagCine = null;   // glitch clock
+  var actx = null;      // WebAudio context for lag sounds
+  var fsBound = false;
+  var audioFailed = false;  // the track never loaded / cannot be decoded
 
   function ensureRoot() {
     if (root) return root;
@@ -197,10 +212,6 @@
       '#anniv-root .anniv-btn:active{transform:translateY(1px) scale(.98)}',
       '#anniv-root .anniv-btn.ghost{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.25);box-shadow:none;text-shadow:none}',
       '#anniv-root .anniv-foot{display:flex;justify-content:space-between;gap:12px;padding:16px 20px;border-top:1px solid rgba(168,85,247,.3);z-index:1}',
-      '#anniv-root .anniv-crt{border:10px solid #1a0f2e;border-radius:14px;box-shadow:0 0 0 2px #a855f7,0 0 26px rgba(168,85,247,.5),inset 0 0 30px rgba(0,0,0,.7);background:#000;overflow:hidden;margin:0 auto 14px;max-width:900px;height:70vh;transition:box-shadow .14s ease,border-color .14s ease}',
-      '#anniv-root .anniv-crt.beat{border-color:#ff4dd5;box-shadow:0 0 0 3px #ff4dd5,0 0 44px rgba(255,77,213,.85),0 0 20px rgba(255,193,77,.5),inset 0 0 34px rgba(0,0,0,.7)}',
-      '#anniv-root .anniv-crt iframe{display:block;width:117.65%;height:117.65%;border:0;background:#000;transform:scale(0.85);transform-origin:top left}',
-      '#anniv-root .anniv-slide-label{font-size:16px;color:rgba(236,230,255,.65);text-align:center;margin-bottom:18px}',
       '#anniv-root .anniv-rule{display:flex;align-items:center;gap:14px;padding:12px 16px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.25);border-radius:10px;margin-bottom:10px}',
       '#anniv-root .anniv-rule .trophy{font-family:"Press Start 2P",monospace;font-size:15px;color:#ffc14d;text-shadow:0 0 8px rgba(255,193,77,.6);flex-shrink:0}',
       '#anniv-root .anniv-rule .r-head{font-family:"Press Start 2P",monospace;font-size:9px;color:#ff4dd5;margin-bottom:3px}',
@@ -217,7 +228,64 @@
       '#anniv-root .anniv-score{font-family:"Press Start 2P",monospace;font-size:42px;color:#ffc14d;text-shadow:0 0 18px rgba(255,193,77,.85);text-align:center;margin:16px 0 6px}',
       '#anniv-root .anniv-score-label{font-size:19px;color:rgba(236,230,255,.7);text-align:center;margin-bottom:22px}',
       '#anniv-root .anniv-reward{text-align:center;padding:16px;border-radius:14px;background:rgba(168,85,247,.14);border:1px solid rgba(168,85,247,.4);font-size:20px;margin-bottom:8px;color:#fff;box-shadow:0 0 16px rgba(168,85,247,.3)}',
-      '#anniv-root .anniv-clear{font-family:"Press Start 2P",monospace;font-size:26px;color:#4ade80;text-shadow:0 0 16px rgba(74,222,128,.7);text-align:center;margin-bottom:6px}'
+      '#anniv-root .anniv-clear{font-family:"Press Start 2P",monospace;font-size:26px;color:#4ade80;text-shadow:0 0 16px rgba(74,222,128,.7);text-align:center;margin-bottom:6px}',
+
+      /* ---- cinematic trailer ------------------------------------------ */
+      '#anniv-root.cine-on .anniv-top,#anniv-root.cine-on .anniv-stage,#anniv-root.cine-on .anniv-foot{display:none}',
+      '#anniv-root .anniv-filtersvg{position:absolute;width:0;height:0;overflow:hidden}',
+      '#anniv-root .anniv-cine{position:absolute;inset:0;z-index:50;background:#000;overflow:hidden}',
+      /* old-clip grade over the archived pages */
+      '#anniv-root .cine-pages{position:absolute;inset:0;opacity:0;visibility:hidden;filter:saturate(.68) contrast(1.07) brightness(.94) sepia(.14);transition:filter .08s linear}',
+      '#anniv-root .cine-pages.on{opacity:1;visibility:visible}',
+      '#anniv-root .cine-pages.beat{filter:saturate(.85) contrast(1.18) brightness(1.14) sepia(.06)}',
+      '#anniv-root .cine-page{position:absolute;inset:0;opacity:0;transition:opacity .04s linear}',
+      '#anniv-root .cine-page.on{opacity:1}',
+      '#anniv-root .cine-page iframe{display:block;width:100%;height:100%;border:0;background:#fff}',
+      /* VHS / old-tape overlay */
+      '#anniv-root .cine-vhs{position:absolute;inset:0;opacity:0;visibility:hidden;pointer-events:none;z-index:6}',
+      '#anniv-root .cine-vhs.on{opacity:1;visibility:visible}',
+      '#anniv-root .vhs-scan{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.42) 0 1px,transparent 1px 3px);opacity:.6}',
+      '#anniv-root .vhs-roll{position:absolute;left:0;right:0;height:13%;background:linear-gradient(180deg,transparent,rgba(255,255,255,.13),transparent);animation:vhsRoll 6.5s linear infinite}',
+      '#anniv-root .vhs-noise{position:absolute;inset:-40%;background-image:repeating-conic-gradient(from 0deg,rgba(255,255,255,.07) 0deg 1deg,transparent 1deg 2.4deg);animation:vhsNoise .26s steps(3) infinite;opacity:.45}',
+      '#anniv-root .vhs-tint{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,214,150,.14),rgba(110,170,255,.14));mix-blend-mode:overlay}',
+      '#anniv-root .vhs-hud{position:absolute;top:20px;left:26px;display:flex;gap:18px;align-items:center;font-family:"VT323",monospace;font-size:24px;color:#fff;text-shadow:0 0 10px rgba(255,255,255,.8),0 0 2px rgba(0,0,0,.9);letter-spacing:.09em}',
+      '#anniv-root .vhs-rec{color:#ff3b3b;animation:vhsBlink 1.15s steps(2) infinite}',
+      /* the warp layer (glitch) + intro text */
+      '#anniv-root .cine-warp{position:absolute;inset:0;z-index:4;transform-origin:center center}',
+      '#anniv-root .cine-boot{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:"VT323",monospace;font-size:28px;color:#9fe4ff;text-shadow:var(--rgbx,0px) 0 rgba(255,0,90,.8),calc(var(--rgbx,0px) * -1) 0 rgba(0,225,255,.8),0 0 14px rgba(120,200,255,.9)}',
+      '#anniv-root .cine-boot.hide{display:none}',
+      '#anniv-root .cine-boot .boot-bar{width:300px;max-width:60vw;height:15px;border:2px solid #9fe4ff;box-shadow:0 0 14px rgba(120,200,255,.6)}',
+      '#anniv-root .cine-boot .boot-bar i{display:block;height:100%;width:0;background:#9fe4ff;box-shadow:0 0 16px #9fe4ff}',
+      '#anniv-root .cine-boot .boot-dim{opacity:.55;font-size:22px}',
+      '#anniv-root .cine-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 8vw;font-family:"VT323",monospace;font-size:min(7.4vw,70px);line-height:1.25;color:#fff;letter-spacing:.03em;opacity:0;filter:blur(calc(var(--bloom,0) * 2.4px)) brightness(calc(1 + var(--bloom,0) * .55)) drop-shadow(0 0 calc(var(--bloom,0) * 18px) rgba(178,107,255,.95))}',
+      '#anniv-root .cine-text.hide{display:none}',
+      '#anniv-root .cine-tear{position:absolute;left:0;right:0;z-index:5;pointer-events:none}',
+      '#anniv-root .cine-roll{position:absolute;left:0;right:0;top:-20%;height:18%;z-index:5;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(170,225,255,.18),transparent);animation:cineRoll .85s linear infinite}',
+      '#anniv-root .cine-static{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.055) 0 2px,transparent 2px 5px),repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 3px,transparent 3px 7px);animation:cineStatic .18s steps(2) infinite;opacity:.55}',
+      '#anniv-root .cine-black{position:absolute;inset:0;z-index:9;background:#000;opacity:0;pointer-events:none;transition:opacity .06s linear}',
+      '#anniv-root .cine-black.on{opacity:1}',
+      '#anniv-root .cine-wait{position:absolute;left:0;right:0;bottom:13vh;text-align:center;z-index:11;pointer-events:none;font-family:"VT323",monospace;font-size:min(3.2vw,22px);letter-spacing:.26em;color:#9fe4ff;opacity:0;transition:opacity .4s ease;text-shadow:0 0 12px rgba(120,200,255,.8)}',
+      '#anniv-root .cine-wait.on{opacity:.75}',
+      /* pause overlay */
+      '#anniv-root .anniv-pause{position:absolute;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;background:rgba(4,2,10,.72);-webkit-backdrop-filter:blur(14px) saturate(.75);backdrop-filter:blur(14px) saturate(.75)}',
+      '#anniv-root .anniv-pause.on{display:flex}',
+      '#anniv-root .pause-card{text-align:center;padding:36px 44px;border:2px solid rgba(168,85,247,.55);border-radius:18px;background:rgba(12,4,24,.9);box-shadow:0 0 46px rgba(168,85,247,.45)}',
+      '#anniv-root .pause-title{font-family:"Press Start 2P",monospace;font-size:20px;color:#fff;text-shadow:0 0 16px rgba(178,107,255,.95);margin-bottom:10px}',
+      '#anniv-root .pause-sub{font-size:20px;color:rgba(236,230,255,.75);margin-bottom:24px}',
+      '#anniv-root .pause-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}',
+      /* fullscreen prompt */
+      '#anniv-root .anniv-fs-prompt{position:absolute;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;background:rgba(4,2,10,.88);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);padding:20px}',
+      '#anniv-root .anniv-fs-prompt.on{display:flex}',
+      '#anniv-root .fs-card{max-width:560px;width:100%;text-align:center;padding:38px 36px;border:2px solid rgba(255,193,77,.45);border-radius:20px;background:radial-gradient(120% 90% at 50% 0%,#2a1140 0%,#14071f 55%,#0a0312 100%);box-shadow:0 0 44px rgba(255,77,184,.35)}',
+      '#anniv-root .fs-title{font-family:"Press Start 2P",monospace;font-size:16px;line-height:1.6;color:#fff;text-shadow:0 0 16px rgba(255,193,77,.85),0 0 32px rgba(255,77,184,.4);margin:0 0 20px}',
+      '#anniv-root .fs-body{font-size:21px;line-height:1.45;color:rgba(236,230,255,.88);margin:0 0 12px}',
+      '#anniv-root .fs-body b{color:#ffc14d;font-weight:400}',
+      '#anniv-root .fs-actions{display:flex;gap:16px;justify-content:center;margin-top:26px;flex-wrap:wrap}',
+      '@keyframes vhsRoll{0%{top:-15%}100%{top:105%}}',
+      '@keyframes vhsNoise{0%{transform:translate(0,0)}50%{transform:translate(-3%,2%)}100%{transform:translate(2%,-2%)}}',
+      '@keyframes vhsBlink{0%,49%{opacity:1}50%,100%{opacity:.12}}',
+      '@keyframes cineStatic{0%{transform:translate(0,0)}50%{transform:translate(-2px,1px)}100%{transform:translate(1px,-2px)}}',
+      '@keyframes cineRoll{0%{top:-20%}100%{top:110%}}'
     ].join('\n');
     document.head.appendChild(style);
     return root;
@@ -250,58 +318,6 @@
     buttons.forEach(function (b) { foot.appendChild(b); });
   }
 
-  function startMusic() {
-    if (!MUSIC_URL) return;
-    if (audio) { startBeatPulse(); return; }
-    try {
-      audio = new Audio(MUSIC_URL);
-      audio.loop = true;
-      audio.volume = 0.5;
-      audio.addEventListener('playing', function onPlay() {
-        audio.removeEventListener('playing', onPlay);
-        startBeatPulse();
-      });
-      var p = audio.play();
-      if (p && p.catch) p.catch(function () {});
-    } catch (_) {}
-  }
-
-  function startBeatPulse() {
-    stopBeatPulse();
-    beatCount = 0;
-    function tick() {
-      var el = root ? root.querySelector('.anniv-crt') : null;
-      if (el) {
-        el.classList.add('beat');
-        setTimeout(function () { if (el.parentNode) el.classList.remove('beat'); }, 140);
-      }
-      beatCount++;
-      if (beatCount % 8 === 0) advanceSlide();
-    }
-    beatTimer = setInterval(tick, BEAT_MS);
-  }
-
-  function advanceSlide() {
-    if (OLD_VERSIONS.length <= 1) return;
-    if (!state || state.questions) return;
-    state.slide = (state.slide + 1) % OLD_VERSIONS.length;
-    renderSlideshow();
-  }
-
-  function stopBeatPulse() {
-    if (beatTimer) { clearInterval(beatTimer); beatTimer = null; }
-  }
-
-  function stopMusic() {
-    if (audio) { try { audio.pause(); } catch (_) {} audio = null; }
-  }
-
-  function close() {
-    stopBeatPulse();
-    stopMusic();
-    if (root) { root.remove(); root = null; }
-  }
-
   function shell(title) {
     var top = el('<div class="anniv-top"><span class="anniv-brand">' + esc(title) + '</span><button class="anniv-close" title="Close">&times;</button></div>');
     top.querySelector('.anniv-close').onclick = close;
@@ -314,26 +330,586 @@
   }
 
   /* ------------------------------------------------------------------ *
-   * Steps
+   * Fullscreen plumbing
    * ------------------------------------------------------------------ */
-  function renderSlideshow() {
-    var slide = state.slide || 0;
-    var v = OLD_VERSIONS[slide] || OLD_VERSIONS[0];
+  function fsElement() {
+    return document.fullscreenElement || document.webkitFullscreenElement ||
+           document.mozFullScreenElement || document.msFullscreenElement || null;
+  }
 
-    var inner = el('<div class="anniv-inner"></div>');
-    inner.appendChild(stageLabel('STAGE 1 — THE ARCHIVE'));
-    inner.appendChild(el('<div class="anniv-title">FIRST<br>ANNIVERSARY</div>'));
-    inner.appendChild(el('<div class="anniv-sub">A look back at where it all began.</div>'));
-    inner.appendChild(el('<div class="anniv-crt"><iframe src="' + esc(v.url) + '" allowfullscreen loading="lazy"></iframe></div>'));
-    inner.appendChild(el('<div class="anniv-slide-label">' + esc(v.label) + (OLD_VERSIONS.length > 1 ? ' · ' + (slide + 1) + ' / ' + OLD_VERSIONS.length : '') + '</div>'));
-    setStage(inner);
+  function requestFs() {
+    if (!root) return Promise.resolve(false);
+    var fn = root.requestFullscreen || root.webkitRequestFullscreen ||
+             root.mozRequestFullScreen || root.msRequestFullscreen;
+    if (!fn) return Promise.resolve(false);
+    try {
+      var p = fn.call(root);
+      if (p && typeof p.then === 'function') {
+        return p.then(function () { return true; }, function () { return false; });
+      }
+      return Promise.resolve(true);
+    } catch (_) { return Promise.resolve(false); }
+  }
 
-    var btn = el('<button class="anniv-btn">SKIP ▶</button>');
-    btn.onclick = function () {
-      stopBeatPulse();
-      renderRules();
+  function exitFs() {
+    try {
+      var fn = document.exitFullscreen || document.webkitExitFullscreen ||
+               document.mozCancelFullScreen || document.msExitFullscreen;
+      if (fn && fsElement()) fn.call(document);
+    } catch (_) {}
+  }
+
+  function bindFsChange() {
+    if (fsBound) return;
+    fsBound = true;
+    var handler = function () {
+      if (!state || !state.started || state.closing) return;
+      var inFs = !!fsElement();
+      if (!inFs && state.fsWas && cine && cine.running) pauseExperience();
+      state.fsWas = inFs;
     };
-    setFoot([btn]);
+    document.addEventListener('fullscreenchange', handler);
+    document.addEventListener('webkitfullscreenchange', handler);
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Audio: music + lag glitch sounds
+   * ------------------------------------------------------------------ */
+  function ensureAudio() {
+    if (audio) return audio;
+    try {
+      audio = new Audio(MUSIC_URL);
+      audio.loop = true;
+      audio.preload = 'auto';
+      audio.volume = 0;
+      try { audio.load(); } catch (_) {}
+      audio.addEventListener('error', function () { audioFailed = true; });
+    } catch (_) { audio = null; }
+    return audio;
+  }
+
+  // Start fetching the track the moment the prompt appears (and warm a second
+  // copy through a preload hint), so the blackout rarely has to wait at all.
+  function warmAudio() {
+    try {
+      var l = document.createElement('link');
+      l.rel = 'preload'; l.as = 'audio'; l.type = 'audio/mpeg'; l.href = MUSIC_URL;
+      document.head.appendChild(l);
+    } catch (_) {}
+    ensureAudio();
+  }
+
+  function ensureCtx() {
+    if (actx) return actx;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) actx = new AC();
+    } catch (_) { actx = null; }
+    if (actx && actx.state === 'suspended' && actx.resume) { try { actx.resume(); } catch (_) {} }
+    return actx;
+  }
+
+  // Sample-and-hold noise burst -> bit-crushed digital crunch.
+  function lagNoise(dur, gain, freq) {
+    var ctx = actx; if (!ctx) return;
+    var n = Math.max(1, Math.floor(ctx.sampleRate * dur));
+    var buf = ctx.createBuffer(1, n, ctx.sampleRate);
+    var d = buf.getChannelData(0);
+    var hold = 0;
+    for (var i = 0; i < n; i++) {
+      if (i % 24 === 0) hold = Math.random() * 2 - 1;
+      d[i] = hold;
+    }
+    var src = ctx.createBufferSource(); src.buffer = buf;
+    var bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = 0.9 + Math.random() * 3.4;
+    var g = ctx.createGain();
+    var t = ctx.currentTime;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(gain, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(bp); bp.connect(g); g.connect(ctx.destination);
+    try { src.start(t); src.stop(t + dur + 0.02); } catch (_) {}
+  }
+
+  // Stuttering square/saw tone -> "buffering" grind.
+  function lagTone() {
+    var ctx = actx; if (!ctx) return;
+    var t = ctx.currentTime;
+    var o = ctx.createOscillator();
+    o.type = Math.random() < 0.55 ? 'square' : 'sawtooth';
+    var steps = 3 + Math.floor(Math.random() * 6);
+    o.frequency.setValueAtTime(40 + Math.random() * 700, t);
+    for (var i = 1; i < steps; i++) {
+      o.frequency.setValueAtTime(40 + Math.random() * 980, t + i * 0.021);
+    }
+    var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200 + Math.random() * 1800;
+    var g = ctx.createGain();
+    var dur = 0.09 + Math.random() * 0.11;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.055, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(lp); lp.connect(g); g.connect(ctx.destination);
+    try { o.start(t); o.stop(t + dur + 0.02); } catch (_) {}
+  }
+
+  function lagSound() {
+    if (Math.random() < 0.62) lagNoise(0.04 + Math.random() * 0.13, 0.07 + Math.random() * 0.10, 300 + Math.random() * 2600);
+    else lagTone();
+  }
+
+  function closeAudio() {
+    if (actx) { try { actx.close(); } catch (_) {} actx = null; }
+  }
+
+  function stopMusic() {
+    if (audio) { try { audio.pause(); } catch (_) {} audio = null; }
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Pausable clock
+   * ------------------------------------------------------------------ */
+  function Cine(duration) {
+    this.duration = duration;
+    this.t = 0;
+    this.running = false;
+    this.paused = false;
+    this._last = 0;
+    this._raf = null;
+    this.onTick = null;
+    this.onDone = null;
+  }
+  Cine.prototype.start = function () {
+    if (this.running) return;
+    this.running = true;
+    this.paused = false;
+    this._last = performance.now();
+    var self = this;
+    function loop() {
+      if (!self.running) return;
+      self._raf = requestAnimationFrame(loop);
+      var now = performance.now();
+      var dt = now - self._last;
+      self._last = now;
+      if (self.paused) return;
+      self.t += dt;
+      if (self.onTick) self.onTick(self.t);
+      if (self.t >= self.duration) { self.stop(); if (self.onDone) self.onDone(); }
+    }
+    this._raf = requestAnimationFrame(loop);
+  };
+  Cine.prototype.pause = function () { this.paused = true; };
+  Cine.prototype.resume = function () {
+    if (!this.running) return;
+    this.paused = false;
+    this._last = performance.now();
+  };
+  Cine.prototype.stop = function () {
+    this.running = false;
+    if (this._raf) cancelAnimationFrame(this._raf);
+    this._raf = null;
+  };
+
+  /* ------------------------------------------------------------------ *
+   * Cinematic: prompt -> lag -> blackout -> intro -> archive
+   * ------------------------------------------------------------------ */
+  function showFsPrompt() {
+    if (!root.querySelector('.anniv-fs-prompt')) {
+      root.insertAdjacentHTML('beforeend',
+        '<div class="anniv-fs-prompt">' +
+          '<div class="fs-card">' +
+            '<div class="fs-title">FIRST ANNIVERSARY</div>' +
+            '<p class="fs-body">It is recommended to play this <b>at home</b>.</p>' +
+            '<p class="fs-body">This game requires <b>fullscreen</b>.</p>' +
+            '<div class="fs-actions">' +
+              '<button class="anniv-btn fs-go">Play</button>' +
+              '<button class="anniv-btn ghost fs-no">Cancel</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>');
+    }
+    var prompt = root.querySelector('.anniv-fs-prompt');
+    prompt.classList.add('on');
+    root.querySelector('.fs-go').onclick = startExperience;
+    root.querySelector('.fs-no').onclick = close;
+  }
+
+  function removeFsPrompt() {
+    var p = root && root.querySelector('.anniv-fs-prompt');
+    if (p) p.remove();
+  }
+
+  function buildCine() {
+    if (root.querySelector('.anniv-cine')) return;
+    var pages = OLD_VERSIONS.map(function (v, i) {
+      return '<div class="cine-page" data-i="' + i + '"><iframe src="' + esc(v.url) +
+             '" loading="eager" allowfullscreen scrolling="no"></iframe></div>';
+    }).join('');
+    root.insertAdjacentHTML('beforeend',
+      '<div class="anniv-cine">' +
+        '<svg class="anniv-filtersvg" width="0" height="0" aria-hidden="true"><defs>' +
+          '<filter id="anniv-warp" x="-25%" y="-25%" width="150%" height="150%">' +
+            '<feTurbulence id="anniv-warp-turb" type="fractalNoise" baseFrequency="0.0008 0.02" numOctaves="1" seed="7" result="n"/>' +
+            '<feDisplacementMap id="anniv-warp-disp" in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>' +
+          '</filter>' +
+        '</defs></svg>' +
+        '<div class="cine-pages">' + pages + '</div>' +
+        '<div class="cine-vhs">' +
+          '<div class="vhs-noise"></div>' +
+          '<div class="vhs-tint"></div>' +
+          '<div class="vhs-roll"></div>' +
+          '<div class="vhs-scan"></div>' +
+          '<div class="vhs-hud"><span class="vhs-rec">&#9679; REC</span><span class="vhs-time">00:00:00</span></div>' +
+        '</div>' +
+        '<div class="cine-warp">' +
+          '<div class="cine-static"></div>' +
+          '<div class="cine-roll"></div>' +
+          '<div class="cine-boot">' +
+            '<div>JQRG ARCHIVE &mdash; v0.0 &rarr; v0.1</div>' +
+            '<div class="boot-bar"><i></i></div>' +
+            '<div class="boot-dim">PLEASE STAND BY</div>' +
+          '</div>' +
+          '<div class="cine-text hide">let\u2019s see where it all began</div>' +
+        '</div>' +
+        '<div class="cine-black on"></div>' +
+        '<div class="cine-wait">BUFFERING&hellip;</div>' +
+      '</div>');
+  }
+
+  function startExperience() {
+    if (!state) return;
+    removeFsPrompt();
+    state.started = true;
+    state.fsWas = !!fsElement();
+    root.classList.add('cine-on');
+
+    // Unlock audio inside the click gesture (silent until the game starts).
+    ensureCtx();
+    ensureAudio();
+    if (audio) {
+      audio.volume = 0;
+      try { var pr = audio.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (_) {}
+    }
+
+    bindFsChange();
+    buildCine();
+    requestFs().then(function () { runLag(); });
+  }
+
+  function runLag() {
+    if (!root) return;
+    root.classList.add('cine-on');
+    setBlack(false);
+    var wrap = root.querySelector('.cine-warp');
+    var turb = document.getElementById('anniv-warp-turb');
+    var disp = document.getElementById('anniv-warp-disp');
+    var bar = root.querySelector('.cine-boot .boot-bar i');
+    var cineEl = root.querySelector('.anniv-cine');
+
+    var tearTimer = setInterval(function () {
+      if (!root || !lagCine || !lagCine.running) return;
+      for (var i = 0; i < 2; i++) if (Math.random() < 0.6) spawnTear(cineEl);
+    }, 130);
+
+    var barP = 0;
+    lagCine = new Cine(LAG_MS);
+    lagCine.onTick = function (t) {
+      var p = Math.min(1, t / LAG_MS);
+      // Progress bar stutters and stalls instead of filling smoothly.
+      barP = Math.max(barP, p * (0.55 + Math.random() * 0.45));
+      if (Math.random() < 0.28) barP *= 0.982;
+      if (bar) bar.style.width = Math.round(Math.min(1, barP) * 100) + '%';
+
+      if (disp) disp.setAttribute('scale', (8 + Math.random() * 46).toFixed(2));
+      if (turb) turb.setAttribute('baseFrequency',
+        (0.001 + Math.random() * 0.05).toFixed(5) + ' ' + (0.01 + Math.random() * 0.09).toFixed(4));
+
+      var inv = Math.random() < 0.035 ? ' invert(1)' : '';
+      wrap.style.filter = 'url(#anniv-warp) hue-rotate(' + rnd(-60, 60).toFixed(0) + 'deg) saturate(' +
+        rnd(1, 3.4).toFixed(2) + ') contrast(' + rnd(1.1, 2).toFixed(2) + ')' + inv;
+      wrap.style.transform = 'translate(' + rnd(-18, 18).toFixed(1) + 'px,' + rnd(-14, 14).toFixed(1) +
+        'px) skewX(' + rnd(-6, 6).toFixed(2) + 'deg) scale(' + (1 + rnd(-0.05, 0.05)).toFixed(3) + ')';
+      wrap.style.setProperty('--rgbx', rnd(-7, 7).toFixed(1) + 'px');
+
+      if (actx && t - state.lastGlitch > 55 + Math.random() * 140) { state.lastGlitch = t; lagSound(); }
+    };
+    lagCine.onDone = function () {
+      clearInterval(tearTimer);
+      if (wrap) { wrap.style.filter = ''; wrap.style.transform = ''; }
+      var te = cineEl ? cineEl.querySelectorAll('.cine-tear') : [];
+      for (var i = 0; i < te.length; i++) te[i].remove();
+      setBlack(true);
+      startGame();
+    };
+    lagCine.start();
+  }
+
+  function spawnTear(cineEl) {
+    if (!cineEl) return;
+    var d = document.createElement('div');
+    d.className = 'cine-tear';
+    d.style.top = rnd(1, 95).toFixed(1) + '%';
+    d.style.height = rnd(1, 9).toFixed(1) + '%';
+    var r = Math.random();
+    if (r < 0.42) { d.style.background = 'rgba(255,255,255,.30)'; d.style.mixBlendMode = 'screen'; }
+    else if (r < 0.68) { d.style.background = 'rgba(125,235,255,.30)'; d.style.mixBlendMode = 'screen'; }
+    else if (r < 0.86) { d.style.background = 'rgba(255,80,170,.26)'; d.style.mixBlendMode = 'screen'; }
+    else { d.style.background = 'rgba(0,0,0,.85)'; }
+    d.style.transform = 'translateX(' + rnd(-16, 16).toFixed(1) + '%)';
+    cineEl.appendChild(d);
+    setTimeout(function () { if (d.parentNode) d.remove(); }, 80);
+  }
+
+  function setBlack(on) {
+    var b = root && root.querySelector('.cine-black');
+    if (b) b.classList.toggle('on', !!on);
+  }
+
+  function startGame() {
+    // The music itself is the clock (see gameTime), so this cine is only a
+    // pausable ticker; the end of the archive is detected inside tickGame.
+    cine = new Cine(Infinity);
+    cine.onTick = tickGame;
+    cine.start();
+  }
+
+  function tickGame(t) {
+    if (!state || state.finished) return;
+    if (!state.gameStarted) {
+      if (t < PRE_BLACK_MS) return;      // hard blackout first
+      if (!armGameAudio(t)) { showWait(t); return; }  // then wait for the first real sample
+    }
+    var g = gameTime(t);
+    if (g < 0) return;
+    if (g >= MAIN_START_MS + ARCHIVE_MS) { endCine(); return; }    if (!state.archStarted && g >= MAIN_START_MS) {
+      state.archStarted = true;
+      onArchiveStart();
+    }
+    if (state.archStarted) updateArchive(g - MAIN_START_MS, g);
+    else updateIntro(g);
+  }
+
+  /* The soundtrack IS the clock: game time is read straight off the audio
+   * element, so a slow load can never leave the visuals running ahead of the
+   * music. The blackout simply holds until the first sample actually plays. */
+  function armGameAudio(t) {
+    if (!state.audioArmed) {
+      state.audioArmed = true;
+      state.audioArmedAt = t;
+      state.audioAtZero = false;
+      if (audio && !audioFailed) {
+        // Rewind to 0 (the pre-roll unlock has been playing silently, so the
+        // element is already buffered, decoded and allowed to autoplay).
+        try { audio.currentTime = 0; } catch (_) {}
+        audio.volume = 0.55;
+        try { var p = audio.play(); if (p && p.catch) p.catch(function () {}); } catch (_) {}
+      } else {
+        state.audioSilent = true;
+      }
+      setBlack(false);
+      hideWait();
+      var boot = root.querySelector('.cine-boot');
+      if (boot) boot.classList.add('hide');
+      var txt = root.querySelector('.cine-text');
+      if (txt) txt.classList.remove('hide');
+      return false;
+    }
+    // The track is unusable: run the rest silently on the wall clock (the cine
+    // still freezes with us), and measure from the real start, not the blackout.
+    if (state.audioSilent || audioFailed) { return giveUpOnAudio(t); }
+    var at = audioTime();
+    // Ignore the pre-roll position until the seek back to 0 has landed.
+    if (!state.audioAtZero) {
+      if (at > 0.5) return false;
+      state.audioAtZero = true;
+    }
+    if (at > 0.02) {
+      state.audioT0 = at;
+      state.gameT0 = t;
+      state.gameStarted = true;
+      hideWait();
+      return true;
+    }
+    // Nothing is playing yet: hold the blackout, then give up rather than stall
+    // forever.
+    if (t - state.audioArmedAt > MAX_AUDIO_WAIT_MS) { return giveUpOnAudio(t); }
+    return false;
+  }
+
+  function giveUpOnAudio(t) {
+    state.audioSilent = true;
+    state.gameT0 = t;
+    state.gameStarted = true;
+    hideWait();
+    if (audio) { try { audio.pause(); audio.volume = 0; } catch (_) {} }
+    return true;
+  }
+
+  // Only surface the loading hint if the wait is long enough to notice.
+  function showWait(t) {
+    var w = root && root.querySelector('.cine-wait');
+    if (!w) return;
+    if (t - state.audioArmedAt > 700) w.classList.add('on');
+  }
+
+  function hideWait() {
+    var w = root && root.querySelector('.cine-wait');
+    if (w) w.classList.remove('on');
+  }
+
+  function audioTime() {
+    try { return audio ? audio.currentTime : 0; } catch (_) { return 0; }
+  }
+
+  // Game time is the soundtrack position (or the wall clock if there is no
+  // soundtrack), measured from the moment the game actually began.
+  function gameTime(t) {
+    if (state.audioSilent) return t - state.gameT0;
+    var at = audioTime();
+    return at > 0 ? (at - state.audioT0) * 1000 : -1;
+  }
+
+  function updateIntro(g) {
+    var txt = root.querySelector('.cine-text');
+    if (!txt) return;
+    var op, bloom;
+    if (g < TEXT_APPEAR_MS) {
+      op = g / TEXT_APPEAR_MS; bloom = 0;
+    } else if (g < BLOOM_UP_MS) {
+      op = 1; bloom = (g - TEXT_APPEAR_MS) / (BLOOM_UP_MS - TEXT_APPEAR_MS);
+    } else if (g < BLOOM_DOWN_MS) {
+      op = 1; bloom = 1 - (g - BLOOM_UP_MS) / (BLOOM_DOWN_MS - BLOOM_UP_MS);
+    } else {
+      bloom = 0; op = 1 - (g - BLOOM_DOWN_MS) / (MAIN_START_MS - BLOOM_DOWN_MS);
+    }
+    txt.style.opacity = Math.max(0, Math.min(1, op)).toFixed(3);
+    root.style.setProperty('--bloom', Math.max(0, Math.min(1, bloom)).toFixed(3));
+  }
+
+  function onArchiveStart() {
+    var txt = root.querySelector('.cine-text');
+    if (txt) { txt.style.opacity = '1'; txt.classList.add('hide'); }
+    root.style.setProperty('--bloom', '0');
+    var pages = root.querySelector('.cine-pages');
+    var vhs = root.querySelector('.cine-vhs');
+    if (pages) pages.classList.add('on');
+    if (vhs) vhs.classList.add('on');
+    setPage(0);
+    pulseBeat();
+  }
+
+  function setPage(i) {
+    if (!state || state.pageIdx === i) return;
+    state.pageIdx = i;
+    var pages = root.querySelectorAll('.cine-page');
+    for (var k = 0; k < pages.length; k++) pages[k].classList.toggle('on', k === i);
+  }
+
+  function pulseBeat() {
+    var p = root && root.querySelector('.cine-pages');
+    if (!p) return;
+    p.classList.add('beat');
+    setTimeout(function () { if (p.parentNode) p.classList.remove('beat'); }, 130);
+  }
+
+  function updateArchive(a, g) {
+    var beatIdx = Math.floor(a / BEAT_MS);
+    var total = OLD_VERSIONS.length * PAGE_BEATS;
+    if (beatIdx >= total) { setBlack(true); return; }
+    var pageIdx = Math.floor(beatIdx / PAGE_BEATS);
+    var bIn = beatIdx % PAGE_BEATS;
+
+    setPage(pageIdx);
+    // 8th beat of every page = sudden blackout; next beat shows the next page.
+    setBlack(bIn === PAGE_BEATS - 1);
+
+    if (beatIdx !== state.lastBeat) {
+      state.lastBeat = beatIdx;
+      pulseBeat();
+    }
+
+    var hud = root.querySelector('.vhs-time');
+    if (hud) {
+      var s = Math.floor(g / 1000);
+      hud.textContent = pad2(Math.floor(s / 3600)) + ':' + pad2(Math.floor(s / 60) % 60) + ':' + pad2(s % 60);
+    }
+  }
+
+  function endCine() {
+    if (state) state.finished = true;
+    if (cine) { cine.stop(); cine = null; }
+    if (lagCine) { lagCine.stop(); lagCine = null; }
+    var c = root && root.querySelector('.anniv-cine');
+    if (c) c.remove();
+    if (root) {
+      root.classList.remove('cine-on');
+      root.style.removeProperty('--bloom');
+    }
+    renderRules();
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Pause / resume (fullscreen exit)
+   * ------------------------------------------------------------------ */
+  function pauseExperience() {
+    if (!state || state.paused) return;
+    state.paused = true;
+    if (cine) cine.pause();
+    if (lagCine) lagCine.pause();
+    if (audio) { try { audio.pause(); } catch (_) {} }
+    showPause();
+  }
+
+  function resumeExperience() {
+    if (!state || !state.paused) return;
+    hidePause();
+    state.paused = false;
+    state.fsWas = !!fsElement();
+    if (audio) { try { var p = audio.play(); if (p && p.catch) p.catch(function () {}); } catch (_) {} }
+    if (cine) cine.resume();
+    if (lagCine) lagCine.resume();
+  }
+
+  function showPause() {
+    if (!root) return;
+    if (!root.querySelector('.anniv-pause')) {
+      root.insertAdjacentHTML('beforeend',
+        '<div class="anniv-pause">' +
+          '<div class="pause-card">' +
+            '<div class="pause-title">PAUSED</div>' +
+            '<div class="pause-sub">Fullscreen was left.</div>' +
+            '<div class="pause-actions">' +
+              '<button class="anniv-btn resume-go">Continue</button>' +
+              '<button class="anniv-btn ghost resume-quit">Exit</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>');
+    }
+    var ov = root.querySelector('.anniv-pause');
+    ov.classList.add('on');
+    root.querySelector('.resume-go').onclick = function () {
+      requestFs().then(function () { resumeExperience(); });
+    };
+    root.querySelector('.resume-quit').onclick = close;
+  }
+
+  function hidePause() {
+    var ov = root && root.querySelector('.anniv-pause');
+    if (ov) ov.classList.remove('on');
+  }
+
+  /* ------------------------------------------------------------------ *
+   * Steps: rules -> quiz -> result
+   * ------------------------------------------------------------------ */
+  function close() {
+    if (state) state.closing = true;
+    if (cine) { cine.stop(); cine = null; }
+    if (lagCine) { lagCine.stop(); lagCine = null; }
+    stopMusic();
+    closeAudio();
+    exitFs();
+    if (root) { root.remove(); root = null; }
+    state = null;
   }
 
   function renderRules() {
@@ -349,7 +925,7 @@
     inner.appendChild(el('<div class="anniv-rules-note">' + esc(RULES_NOTE) + '</div>'));
     setStage(inner);
 
-    var btn = el('<button class="anniv-btn">START THE QUIZ ▶</button>');
+    var btn = el('<button class="anniv-btn">Start</button>');
     btn.onclick = function () { startQuiz(); };
     setFoot([btn]);
   }
@@ -395,17 +971,17 @@
     inner.appendChild(opts);
     setStage(inner);
 
-    var back = el('<button class="anniv-btn ghost">◀ BACK</button>');
+    var back = el('<button class="anniv-btn ghost">Back</button>');
     back.onclick = function () {
       if (i === 0) { renderRules(); } else { state.qIndex = i - 1; state.trapped = false; renderQuiz(); }
     };
 
-    var next = el('<button class="anniv-btn">' + (i + 1 === total ? 'FINISH ▶' : 'NEXT ▶') + '</button>');
+    var next = el('<button class="anniv-btn">' + (i + 1 === total ? 'Finish' : 'Next') + '</button>');
     next.onclick = function () {
       if (state.trapped) return;
       if (state.answers[i] == null) {
-        next.textContent = 'PICK ONE';
-        setTimeout(function () { if (next.parentNode) next.textContent = (i + 1 === total ? 'FINISH ▶' : 'NEXT ▶'); }, 1400);
+        next.textContent = 'Pick';
+        setTimeout(function () { if (next.parentNode) next.textContent = (i + 1 === total ? 'Finish' : 'Next'); }, 1400);
         return;
       }
       if (i + 1 < total) { state.qIndex = i + 1; state.trapped = false; renderQuiz(); }
@@ -425,7 +1001,7 @@
     inner.appendChild(el('<div class="anniv-title">SCORING…</div>'));
     inner.appendChild(el('<div class="anniv-sub">Contacting the leaderboard…</div>'));
     setStage(inner);
-    var done = el('<button class="anniv-btn">EXIT</button>');
+    var done = el('<button class="anniv-btn">Exit</button>');
     done.onclick = close;
     setFoot([done]);
   }
@@ -438,7 +1014,7 @@
     inner.appendChild(el('<div class="anniv-score-label">correct answers</div>'));
     inner.appendChild(el('<div class="anniv-reward">' + esc(done.reward) + '</div>'));
     setStage(inner);
-    var b = el('<button class="anniv-btn">EXIT</button>');
+    var b = el('<button class="anniv-btn">Exit</button>');
     b.onclick = close;
     setFoot([b]);
   }
@@ -474,7 +1050,7 @@
       if (!ANNIV_PENDING && !already) setDoneFlag({ score: data.score, reward: data.reward, rank: data.rank });
     }
     setStage(inner);
-    var b = el('<button class="anniv-btn">EXIT</button>');
+    var b = el('<button class="anniv-btn">Exit</button>');
     b.onclick = close;
     setFoot([b]);
   }
@@ -512,16 +1088,22 @@
         inner.appendChild(el('<div class="anniv-title">COMING SOON</div>'));
         inner.appendChild(el('<div class="anniv-sub">The celebration opens on September 20 — check back then!</div>'));
         setStage(inner);
-        var b = el('<button class="anniv-btn">GOT IT</button>');
+        var b = el('<button class="anniv-btn">Ok</button>');
         b.onclick = close;
         setFoot([b]);
         return;
       }
       ensureRoot();
       shell('FIRST ANNIVERSARY');
-      state = { slide: 0, questions: null, answers: null, qIndex: 0, trapped: false };
-      renderSlideshow();
-      startMusic();
+      state = {
+        started: false, paused: false, fsWas: false, closing: false,
+        gameStarted: false, archStarted: false, pageIdx: -1, lastBeat: -1, lastGlitch: 0,
+        audioArmed: false, audioArmedAt: 0, audioAtZero: false, audioSilent: false, finished: false,
+        gameT0: 0, audioT0: 0,
+        questions: null, answers: null, qIndex: 0, trapped: false
+      };
+      warmAudio();
+      showFsPrompt();
     }
   };
 })();
