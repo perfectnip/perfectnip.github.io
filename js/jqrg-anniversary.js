@@ -82,13 +82,16 @@
   /* Cinematic timings (all in ms of "game time") */
   var LAG_MS = 5000;                            // glitch/lag before the game
   var PRE_BLACK_MS = 1000;                      // hard blackout before music
-  var MAIN_START_MS = 37100;                    // song main part @ 00:37.010
+  var TEXT_MS = 19600;                          // "let's see where it all began" is on screen 19.6 s
+  var MAIN_START_MS = TEXT_MS;                  // archive starts the instant the text is gone (≈ beat 36)
   var PAGE_BEATS = 8;                           // 7 on-screen + blackout beat
   var ARCHIVE_MS = OLD_VERSIONS.length * PAGE_BEATS * BEAT_MS;  // 32 beats
   var MAX_AUDIO_WAIT_MS = 6000;                 // hold the blackout for the music
-  var TEXT_APPEAR_MS = 9000;                    // "slowly appear"
-  var BLOOM_UP_MS = 20000;                      // bloom 0 -> 1
-  var BLOOM_DOWN_MS = 30000;                    // bloom 1 -> 0, then fade out
+  // Text phases are fractions of TEXT_MS: the same appear -> bloom up -> bloom
+  // down -> fade shape as before, so changing TEXT_MS is the only edit needed.
+  var TEXT_APPEAR_MS = TEXT_MS * 0.2426;        // "slowly appear": opacity 0 -> 1
+  var BLOOM_UP_MS = TEXT_MS * 0.5391;           // bloom 0 -> 1
+  var BLOOM_DOWN_MS = TEXT_MS * 0.8086;         // bloom 1 -> 0, then fade out
 
   var WORKER_URL = (function () {
     try {
