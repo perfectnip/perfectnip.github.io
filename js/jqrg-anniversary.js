@@ -74,6 +74,13 @@
     { label: "V0.1 — Games", url: "/anniversary/versions/v0.1-games.html" }
   ];
   var MUSIC_URL = '/music/comfort-chain.mp3';
+  // comfort-chain.mp3 opens with ~2.15 s of digital silence. The track starts on
+  // its first audible frame so the music arrives with the intro text rather
+  // than a beat after it.
+  var MUSIC_SKIP_MS = 2150;
+  // If the soundtrack stops advancing (blocked autoplay, stalled stream), the
+  // show falls back to the wall clock instead of waiting on it forever.
+  var AUDIO_STALL_MS = 2000;
 
   // Music BPM (comfort-chain.mp3 = 110). The archive is cut on the beat.
   var MUSIC_BPM = 110;
@@ -214,7 +221,10 @@
       '#anniv-root .anniv-btn:hover{background:rgba(168,85,247,.3);box-shadow:0 0 18px rgba(168,85,247,.7),inset 0 0 14px rgba(168,85,247,.35);transform:translateY(-1px)}',
       '#anniv-root .anniv-btn:active{transform:translateY(1px) scale(.98)}',
       '#anniv-root .anniv-btn.ghost{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.25);box-shadow:none;text-shadow:none}',
-      '#anniv-root .anniv-foot{display:flex;justify-content:space-between;gap:12px;padding:16px 20px;border-top:1px solid rgba(168,85,247,.3);z-index:1}',
+      '#anniv-root .anniv-foot{display:flex;justify-content:flex-end;gap:12px;padding:16px 20px;border-top:1px solid rgba(168,85,247,.3);z-index:1}',
+      /* Post-trailer (rules + questions) drops the leftover trailer dressing. */
+      '#anniv-root.clean{background-image:none}',
+      '#anniv-root.clean::before,#anniv-root.clean::after{display:none}',
       '#anniv-root .anniv-rule{display:flex;align-items:center;gap:14px;padding:12px 16px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.25);border-radius:10px;margin-bottom:10px}',
       '#anniv-root .anniv-rule .trophy{font-family:"Press Start 2P",monospace;font-size:15px;color:#ffc14d;text-shadow:0 0 8px rgba(255,193,77,.6);flex-shrink:0}',
       '#anniv-root .anniv-rule .r-head{font-family:"Press Start 2P",monospace;font-size:9px;color:#ff4dd5;margin-bottom:3px}',
@@ -385,10 +395,23 @@
       audio.loop = true;
       audio.preload = 'auto';
       audio.volume = 0;
+      audio.muted = true;   // the pre-roll is a buffer warm-up, never audible
       try { audio.load(); } catch (_) {}
       audio.addEventListener('error', function () { audioFailed = true; });
     } catch (_) { audio = null; }
     return audio;
+  }
+
+  // Fetch the archived pages while the prompt is on screen: they are what the
+  // trailer shows, and on a slow link every second of head start counts.
+  function warmArchive() {
+    try {
+      for (var i = 0; i < OLD_VERSIONS.length; i++) {
+        var l = document.createElement('link');
+        l.rel = 'prefetch'; l.href = OLD_VERSIONS[i].url;
+        document.head.appendChild(l);
+      }
+    } catch (_) {}
   }
 
   // Start fetching the track the moment the prompt appears (and warm a second
@@ -579,6 +602,17 @@
       '</div>');
   }
 
+  // Reveal the intro text: the blackout lifts on the very frame the soundtrack
+  // becomes audible, so the music and the words arrive together.
+  function beginIntro() {
+    setBlack(false);
+    hideWait();
+    var boot = root && root.querySelector('.cine-boot');
+    if (boot) boot.classList.add('hide');
+    var txt = root && root.querySelector('.cine-text');
+    if (txt) txt.classList.remove('hide');
+  }
+
   function startExperience() {
     if (!state) return;
     removeFsPrompt();
@@ -591,6 +625,7 @@
     ensureAudio();
     if (audio) {
       audio.volume = 0;
+      audio.muted = true;
       try { var pr = audio.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (_) {}
     }
 
@@ -694,57 +729,56 @@
 
   /* The soundtrack IS the clock: game time is read straight off the audio
    * element, so a slow load can never leave the visuals running ahead of the
-   * music. The blackout simply holds until the first sample actually plays. */
+   * music. The blackout simply holds until the first sample actually plays.
+   *
+   * The music has to be audible in the same frame as the intro text, so the
+   * pre-roll is parked on the track's first audible frame while it is still
+   * muted — raising the volume any earlier plays the tail of the warm-up. */
   function armGameAudio(t) {
+    var startS = MUSIC_SKIP_MS / 1000;
     if (!state.audioArmed) {
       state.audioArmed = true;
       state.audioArmedAt = t;
-      state.audioAtZero = false;
-      if (audio && !audioFailed) {
-        // Rewind to 0 (the pre-roll unlock has been playing silently, so the
-        // element is already buffered, decoded and allowed to autoplay).
-        try { audio.currentTime = 0; } catch (_) {}
-        audio.volume = 0.55;
-        try { var p = audio.play(); if (p && p.catch) p.catch(function () {}); } catch (_) {}
-      } else {
-        state.audioSilent = true;
-      }
-      setBlack(false);
-      hideWait();
-      var boot = root.querySelector('.cine-boot');
-      if (boot) boot.classList.add('hide');
-      var txt = root.querySelector('.cine-text');
-      if (txt) txt.classList.remove('hide');
+      if (!audio || audioFailed) { state.audioSilent = true; return false; }
+      // Rewind to the first audible frame while still muted (the pre-roll has
+      // been playing silently, so the element is buffered, decoded and already
+      // allowed to autoplay). Seek while it is playing — a paused element cannot
+      // land the seek.
+      try { audio.currentTime = startS; } catch (_) {}
       return false;
     }
     // The track is unusable: run the rest silently on the wall clock (the cine
     // still freezes with us), and measure from the real start, not the blackout.
     if (state.audioSilent || audioFailed) { return giveUpOnAudio(t); }
     var at = audioTime();
-    // Ignore the pre-roll position until the seek back to 0 has landed.
-    if (!state.audioAtZero) {
-      if (at > 0.5) return false;
-      state.audioAtZero = true;
-    }
-    if (at > 0.02) {
-      state.audioT0 = at;
+    if (!state.audioSeeked) {
+      // Anything that is not the seek target is still the pre-roll position.
+      if (Math.abs(at - startS) > 0.25) {
+        if (t - state.audioArmedAt > MAX_AUDIO_WAIT_MS) { return giveUpOnAudio(t); }
+        return false;
+      }
+      state.audioSeeked = true;
+      state.audioT0 = startS;
       state.gameT0 = t;
+      state.lastAudioAt = at;
+      state.lastAudioAdvance = t;
       state.gameStarted = true;
-      hideWait();
-      return true;
+      if (audio) {
+        audio.muted = false;
+        audio.volume = 0.55;
+        try { var p = audio.play(); if (p && p.catch) p.catch(function () {}); } catch (_) {}
+      }
+      beginIntro();
     }
-    // Nothing is playing yet: hold the blackout, then give up rather than stall
-    // forever.
-    if (t - state.audioArmedAt > MAX_AUDIO_WAIT_MS) { return giveUpOnAudio(t); }
-    return false;
+    return true;
   }
 
   function giveUpOnAudio(t) {
     state.audioSilent = true;
     state.gameT0 = t;
     state.gameStarted = true;
-    hideWait();
-    if (audio) { try { audio.pause(); audio.volume = 0; } catch (_) {} }
+    if (audio) { try { audio.pause(); audio.muted = true; audio.volume = 0; } catch (_) {} }
+    beginIntro();
     return true;
   }
 
@@ -765,10 +799,22 @@
   }
 
   // Game time is the soundtrack position (or the wall clock if there is no
-  // soundtrack), measured from the moment the game actually began.
+  // soundtrack), measured from the moment the game actually began. A track that
+  // stops moving hands over to the wall clock at the position it reached, so a
+  // blocked autoplay or a stalled stream can only cost the music, never the show.
   function gameTime(t) {
     if (state.audioSilent) return t - state.gameT0;
     var at = audioTime();
+    if (at > state.lastAudioAt + 0.001) {
+      state.lastAudioAt = at;
+      state.lastAudioAdvance = t;
+    } else if (t - state.lastAudioAdvance > AUDIO_STALL_MS) {
+      var stalled = Math.max(0, (at > 0 ? at - state.audioT0 : 0) * 1000);
+      state.audioSilent = true;
+      state.gameT0 = t - stalled;
+      if (audio) { try { audio.pause(); audio.muted = true; audio.volume = 0; } catch (_) {} }
+      return stalled;
+    }
     return at > 0 ? (at - state.audioT0) * 1000 : -1;
   }
 
@@ -905,11 +951,17 @@
    * Steps: rules -> quiz -> result
    * ------------------------------------------------------------------ */
   function close() {
+    var particlesWere = !!(state && state.particlesWere);
     if (state) state.closing = true;
     if (cine) { cine.stop(); cine = null; }
     if (lagCine) { lagCine.stop(); lagCine = null; }
     stopMusic();
     closeAudio();
+    try {
+      if (window.JqrgParticles && window.JqrgParticles.setPaused && !particlesWere) {
+        window.JqrgParticles.setPaused(false);
+      }
+    } catch (_) {}
     exitFs();
     if (root) { root.remove(); root = null; }
     state = null;
@@ -934,6 +986,9 @@
   }
 
   function startQuiz() {
+    // The questions play clean: the CRT scanlines, vignette and grid that sell
+    // the trailer stop here.
+    if (root) root.classList.add('clean');
     if (!ANNIV_PENDING && getDoneFlag()) { renderAlreadyDone(getDoneFlag()); return; }
     state.questions = buildQuiz();
     state.answers = new Array(state.questions.length).fill(null);
@@ -1101,10 +1156,19 @@
       state = {
         started: false, paused: false, fsWas: false, closing: false,
         gameStarted: false, archStarted: false, pageIdx: -1, lastBeat: -1, lastGlitch: 0,
-        audioArmed: false, audioArmedAt: 0, audioAtZero: false, audioSilent: false, finished: false,
-        gameT0: 0, audioT0: 0,
+        audioArmed: false, audioArmedAt: 0, audioSeeked: false, audioSilent: false, finished: false,
+        gameT0: 0, audioT0: 0, particlesWere: false, lastAudioAt: 0, lastAudioAdvance: 0,
         questions: null, answers: null, qIndex: 0, trapped: false
       };
+      // The site's particle field keeps animating behind this overlay; none of
+      // it is visible, and on a school laptop it is pure dropped frames.
+      try {
+        if (window.JqrgParticles && window.JqrgParticles.setPaused) {
+          state.particlesWere = !!(window.JqrgParticles.isGamePaused && window.JqrgParticles.isGamePaused());
+          window.JqrgParticles.setPaused(true);
+        }
+      } catch (_) {}
+      warmArchive();
       warmAudio();
       showFsPrompt();
     }
