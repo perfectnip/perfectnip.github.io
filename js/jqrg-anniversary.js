@@ -87,7 +87,11 @@
   var BEAT_MS = 60000 / MUSIC_BPM;              // 545.45 ms
 
   /* Cinematic timings (all in ms of "game time") */
-  var LAG_MS = 5000;                            // glitch/lag before the game
+  var LAG_MS = 5000;                            // minimum glitch before the game
+  // The lag doubles as the loading gate: it holds (at most this long) until the
+  // soundtrack and the four archived pages are actually ready, so the archive can
+  // never play over a half-loaded page and miss its beats.
+  var LAG_MAX_MS = 14000;
   var PRE_BLACK_MS = 1000;                      // hard blackout before music
   var TEXT_MS = 19600;                          // "let's see where it all began" is on screen 19.6 s
   var MAIN_START_MS = TEXT_MS;                  // archive starts the instant the text is gone (≈ beat 36)
@@ -265,11 +269,10 @@
       '#anniv-root .vhs-rec{color:#ff3b3b;animation:vhsBlink 1.15s steps(2) infinite}',
       /* the warp layer (glitch) + intro text */
       '#anniv-root .cine-warp{position:absolute;inset:0;z-index:4;transform-origin:center center}',
-      '#anniv-root .cine-boot{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:"VT323",monospace;font-size:28px;color:#9fe4ff;text-shadow:var(--rgbx,0px) 0 rgba(255,0,90,.8),calc(var(--rgbx,0px) * -1) 0 rgba(0,225,255,.8),0 0 14px rgba(120,200,255,.9)}',
-      '#anniv-root .cine-boot.hide{display:none}',
-      '#anniv-root .cine-boot .boot-bar{width:300px;max-width:60vw;height:15px;border:2px solid #9fe4ff;box-shadow:0 0 14px rgba(120,200,255,.6)}',
-      '#anniv-root .cine-boot .boot-bar i{display:block;height:100%;width:0;background:#9fe4ff;box-shadow:0 0 16px #9fe4ff}',
-      '#anniv-root .cine-boot .boot-dim{opacity:.55;font-size:22px}',
+      /* Pre-roll: the lag plays on the page itself, so the overlay goes
+         see-through and the glitch is applied to the real site underneath. */
+      '#anniv-root.cine-site{background-color:transparent;background-image:none}',
+      '#anniv-root.cine-site .anniv-cine{background:transparent}',
       '#anniv-root .cine-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 8vw;font-family:"VT323",monospace;font-size:min(7.4vw,70px);line-height:1.25;color:#fff;letter-spacing:.03em;opacity:0;filter:blur(calc(var(--bloom,0) * 2.4px)) brightness(calc(1 + var(--bloom,0) * .55)) drop-shadow(0 0 calc(var(--bloom,0) * 18px) rgba(178,107,255,.95))}',
       '#anniv-root .cine-text.hide{display:none}',
       '#anniv-root .cine-tear{position:absolute;left:0;right:0;z-index:5;pointer-events:none}',
@@ -378,7 +381,8 @@
     var handler = function () {
       if (!state || !state.started || state.closing) return;
       var inFs = !!fsElement();
-      if (!inFs && state.fsWas && cine && cine.running) pauseExperience();
+      var showRunning = (cine && cine.running) || (lagCine && lagCine.running);
+      if (!inFs && state.fsWas && showRunning) pauseExperience();
       state.fsWas = inFs;
     };
     document.addEventListener('fullscreenchange', handler);
@@ -590,16 +594,38 @@
         '<div class="cine-warp">' +
           '<div class="cine-static"></div>' +
           '<div class="cine-roll"></div>' +
-          '<div class="cine-boot">' +
-            '<div>JQRG ARCHIVE &mdash; v0.0 &rarr; v0.1</div>' +
-            '<div class="boot-bar"><i></i></div>' +
-            '<div class="boot-dim">PLEASE STAND BY</div>' +
-          '</div>' +
           '<div class="cine-text hide">let\u2019s see where it all began</div>' +
         '</div>' +
         '<div class="cine-black on"></div>' +
         '<div class="cine-wait">BUFFERING&hellip;</div>' +
       '</div>');
+
+    // Every archived page is part of the show, so the pre-roll waits for each
+    // one to be in the document. A page that fails still counts, so a broken URL
+    // can never stall the trailer.
+    var frames = root.querySelectorAll('.cine-page iframe');
+    for (var i = 0; i < frames.length; i++) {
+      var idx = parseInt(frames[i].parentNode.getAttribute('data-i'), 10);
+      if (isNaN(idx)) idx = i;
+      frames[i].addEventListener('load', markPageReady(idx), { once: true });
+      frames[i].addEventListener('error', markPageReady(idx), { once: true });
+    }
+  }
+
+  function markPageReady(idx) {
+    return function () {
+      if (!state || state.pagesReady[idx]) return;
+      state.pagesReady[idx] = true;
+      state.pagesLoaded++;
+    };
+  }
+
+  // The pre-roll hands over to the music only when the show's assets are here.
+  function preRollReady() {
+    if (!state) return true;
+    var pages = state.pagesLoaded >= OLD_VERSIONS.length;
+    var music = !!audioFailed || !!(audio && audio.readyState >= 3);
+    return pages && music;
   }
 
   // Reveal the intro text: the blackout lifts on the very frame the soundtrack
@@ -607,8 +633,6 @@
   function beginIntro() {
     setBlack(false);
     hideWait();
-    var boot = root && root.querySelector('.cine-boot');
-    if (boot) boot.classList.add('hide');
     var txt = root && root.querySelector('.cine-text');
     if (txt) txt.classList.remove('hide');
   }
@@ -631,17 +655,46 @@
 
     bindFsChange();
     buildCine();
+    // The lag plays on the page itself: the overlay goes see-through so the
+    // website the visitor is already on is what appears to break.
+    root.classList.add('cine-site');
     requestFs().then(function () { runLag(); });
+  }
+
+  // The glitch, applied to the real page: the site warps, tears and colour-shifts
+  // while its own assets finish loading behind it. The cheap filter chain runs
+  // every frame; the SVG displacement (which re-rasterises the whole page) only
+  // in short bursts, so the pre-roll cannot starve the media pipeline.
+  function glitchSite(t) {
+    var site = document.getElementById('app');
+    if (!site) return;
+    var turb = document.getElementById('anniv-warp-turb');
+    var disp = document.getElementById('anniv-warp-disp');
+    var burst = (t % 900) < 260;
+    if (burst) {
+      if (disp) disp.setAttribute('scale', (8 + Math.random() * 46).toFixed(2));
+      if (turb) {
+        turb.setAttribute('baseFrequency',
+          (0.001 + Math.random() * 0.05).toFixed(5) + ' ' + (0.01 + Math.random() * 0.09).toFixed(4));
+      }
+    }
+    var inv = Math.random() < 0.035 ? ' invert(1)' : '';
+    site.style.filter = (burst ? 'url(#anniv-warp) ' : '') + 'hue-rotate(' + rnd(-60, 60).toFixed(0) +
+      'deg) saturate(' + rnd(1, 3.4).toFixed(2) + ') contrast(' + rnd(1.1, 2).toFixed(2) + ')' + inv;
+    site.style.transform = 'translate(' + rnd(-18, 18).toFixed(1) + 'px,' + rnd(-14, 14).toFixed(1) +
+      'px) skewX(' + rnd(-6, 6).toFixed(2) + 'deg) scale(' + (1 + rnd(-0.05, 0.05)).toFixed(3) + ')';
+  }
+
+  function unglitchSite() {
+    var site = document.getElementById('app');
+    if (site) { site.style.filter = ''; site.style.transform = ''; }
+    if (root) root.classList.remove('cine-site');
   }
 
   function runLag() {
     if (!root) return;
     root.classList.add('cine-on');
     setBlack(false);
-    var wrap = root.querySelector('.cine-warp');
-    var turb = document.getElementById('anniv-warp-turb');
-    var disp = document.getElementById('anniv-warp-disp');
-    var bar = root.querySelector('.cine-boot .boot-bar i');
     var cineEl = root.querySelector('.anniv-cine');
 
     var tearTimer = setInterval(function () {
@@ -649,31 +702,22 @@
       for (var i = 0; i < 2; i++) if (Math.random() < 0.6) spawnTear(cineEl);
     }, 130);
 
-    var barP = 0;
     lagCine = new Cine(LAG_MS);
     lagCine.onTick = function (t) {
-      var p = Math.min(1, t / LAG_MS);
-      // Progress bar stutters and stalls instead of filling smoothly.
-      barP = Math.max(barP, p * (0.55 + Math.random() * 0.45));
-      if (Math.random() < 0.28) barP *= 0.982;
-      if (bar) bar.style.width = Math.round(Math.min(1, barP) * 100) + '%';
-
-      if (disp) disp.setAttribute('scale', (8 + Math.random() * 46).toFixed(2));
-      if (turb) turb.setAttribute('baseFrequency',
-        (0.001 + Math.random() * 0.05).toFixed(5) + ' ' + (0.01 + Math.random() * 0.09).toFixed(4));
-
-      var inv = Math.random() < 0.035 ? ' invert(1)' : '';
-      wrap.style.filter = 'url(#anniv-warp) hue-rotate(' + rnd(-60, 60).toFixed(0) + 'deg) saturate(' +
-        rnd(1, 3.4).toFixed(2) + ') contrast(' + rnd(1.1, 2).toFixed(2) + ')' + inv;
-      wrap.style.transform = 'translate(' + rnd(-18, 18).toFixed(1) + 'px,' + rnd(-14, 14).toFixed(1) +
-        'px) skewX(' + rnd(-6, 6).toFixed(2) + 'deg) scale(' + (1 + rnd(-0.05, 0.05)).toFixed(3) + ')';
-      wrap.style.setProperty('--rgbx', rnd(-7, 7).toFixed(1) + 'px');
-
+      // There is no loading bar: the lag IS the loading screen. It holds until
+      // the soundtrack and the archived pages are actually here, and gives up
+      // after LAG_MAX_MS so a broken asset can never trap the visitor.
+      if (!preRollReady() && t < LAG_MAX_MS) {
+        if (t >= lagCine.duration) lagCine.duration = t + 400;
+        if (t > 3000) showWaitText('LOADING\u2026');
+      }
+      glitchSite(t);
       if (actx && t - state.lastGlitch > 55 + Math.random() * 140) { state.lastGlitch = t; lagSound(); }
     };
     lagCine.onDone = function () {
       clearInterval(tearTimer);
-      if (wrap) { wrap.style.filter = ''; wrap.style.transform = ''; }
+      hideWait();
+      unglitchSite();
       var te = cineEl ? cineEl.querySelectorAll('.cine-tear') : [];
       for (var i = 0; i < te.length; i++) te[i].remove();
       setBlack(true);
@@ -782,11 +826,16 @@
     return true;
   }
 
-  // Only surface the loading hint if the wait is long enough to notice.
-  function showWait(t) {
+  function showWaitText(text) {
     var w = root && root.querySelector('.cine-wait');
     if (!w) return;
-    if (t - state.audioArmedAt > 700) w.classList.add('on');
+    if (text) w.textContent = text;
+    w.classList.add('on');
+  }
+
+  // Only surface the loading hint if the wait is long enough to notice.
+  function showWait(t) {
+    if (t - state.audioArmedAt > 700) showWaitText('BUFFERING\u2026');
   }
 
   function hideWait() {
@@ -810,6 +859,22 @@
       state.lastAudioAdvance = t;
     } else if (t - state.lastAudioAdvance > AUDIO_STALL_MS) {
       var stalled = Math.max(0, (at > 0 ? at - state.audioT0 : 0) * 1000);
+      // An element can come out of a seek without resuming (a starving frame can
+      // take the media clock with it). While the intro is still at its very
+      // start, restart the music once from the target rather than silently
+      // playing the rest of the show without it.
+      if (!state.audioRescued && stalled < 1500) {
+        state.audioRescued = true;
+        state.lastAudioAt = 0;
+        state.lastAudioAdvance = t;
+        try {
+          if (audio) {
+            audio.currentTime = state.audioT0;
+            var p = audio.play(); if (p && p.catch) p.catch(function () {});
+          }
+        } catch (_) {}
+        return stalled;
+      }
       state.audioSilent = true;
       state.gameT0 = t - stalled;
       if (audio) { try { audio.pause(); audio.muted = true; audio.volume = 0; } catch (_) {} }
@@ -861,21 +926,25 @@
     setTimeout(function () { if (p.parentNode) p.classList.remove('beat'); }, 130);
   }
 
+  // Beat-accurate and cheap: the visual state is a pure function of the music
+  // clock, and the DOM is only touched when a beat actually turns — so a dropped
+  // frame skips nothing and cannot push the pages off the beat.
   function updateArchive(a, g) {
     var beatIdx = Math.floor(a / BEAT_MS);
     var total = OLD_VERSIONS.length * PAGE_BEATS;
-    if (beatIdx >= total) { setBlack(true); return; }
+    if (beatIdx >= total) {
+      if (state.lastBeat !== total) { state.lastBeat = total; setBlack(true); }
+      return;
+    }
+    if (beatIdx === state.lastBeat) return;
+    state.lastBeat = beatIdx;
     var pageIdx = Math.floor(beatIdx / PAGE_BEATS);
     var bIn = beatIdx % PAGE_BEATS;
 
     setPage(pageIdx);
     // 8th beat of every page = sudden blackout; next beat shows the next page.
     setBlack(bIn === PAGE_BEATS - 1);
-
-    if (beatIdx !== state.lastBeat) {
-      state.lastBeat = beatIdx;
-      pulseBeat();
-    }
+    pulseBeat();
 
     var hud = root.querySelector('.vhs-time');
     if (hud) {
@@ -888,6 +957,7 @@
     if (state) state.finished = true;
     if (cine) { cine.stop(); cine = null; }
     if (lagCine) { lagCine.stop(); lagCine = null; }
+    unglitchSite();
     var c = root && root.querySelector('.anniv-cine');
     if (c) c.remove();
     if (root) {
@@ -955,6 +1025,7 @@
     if (state) state.closing = true;
     if (cine) { cine.stop(); cine = null; }
     if (lagCine) { lagCine.stop(); lagCine = null; }
+    unglitchSite();
     stopMusic();
     closeAudio();
     try {
@@ -968,6 +1039,9 @@
   }
 
   function renderRules() {
+    // The trailer dressing (CRT scanlines, vignette, purple grid) belongs to the
+    // trailer: the reward table is the first clean screen.
+    if (root) root.classList.add('clean');
     var inner = el('<div class="anniv-inner"></div>');
     inner.appendChild(stageLabel('STAGE 2 — REWARDS'));
     inner.appendChild(el('<div class="anniv-title">HOW TO WIN</div>'));
@@ -986,9 +1060,6 @@
   }
 
   function startQuiz() {
-    // The questions play clean: the CRT scanlines, vignette and grid that sell
-    // the trailer stop here.
-    if (root) root.classList.add('clean');
     if (!ANNIV_PENDING && getDoneFlag()) { renderAlreadyDone(getDoneFlag()); return; }
     state.questions = buildQuiz();
     state.answers = new Array(state.questions.length).fill(null);
@@ -1158,6 +1229,7 @@
         gameStarted: false, archStarted: false, pageIdx: -1, lastBeat: -1, lastGlitch: 0,
         audioArmed: false, audioArmedAt: 0, audioSeeked: false, audioSilent: false, finished: false,
         gameT0: 0, audioT0: 0, particlesWere: false, lastAudioAt: 0, lastAudioAdvance: 0,
+        pagesLoaded: 0, pagesReady: [false, false, false, false], audioRescued: false,
         questions: null, answers: null, qIndex: 0, trapped: false
       };
       // The site's particle field keeps animating behind this overlay; none of
