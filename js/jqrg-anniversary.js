@@ -15,6 +15,9 @@
    * open the experience and he can try infinitely (test mode). */
   var ANNIV_PENDING = true;
   var OWNER_USERNAMES = ['jimmyqrg'];
+  // Testers can open the experience before release, but the quiz is not part of
+  // what they are allowed to test — they can watch the trailer and rules only.
+  var TESTER_USERNAMES = ['glaxyias'];
 
   /* ------------------------------------------------------------------ *
    * Quiz data — questions + options ONLY. No correct answers here.
@@ -93,8 +96,8 @@
   // never play over a half-loaded page and miss its beats.
   var LAG_MAX_MS = 14000;
   var PRE_BLACK_MS = 1000;                      // hard blackout before music
-  var TEXT_MS = 19600;                          // "let's see where it all began" is on screen 19.6 s
-  var MAIN_START_MS = TEXT_MS;                  // archive starts the instant the text is gone (≈ beat 36)
+  var TEXT_MS = 9800;                           // "let's see where it all began" is on screen 9.8 s
+  var MAIN_START_MS = TEXT_MS;                  // archive starts the instant the text is gone (≈ beat 18)
   var PAGE_BEATS = 8;                           // 7 on-screen + blackout beat
   var ARCHIVE_MS = OLD_VERSIONS.length * PAGE_BEATS * BEAT_MS;  // 32 beats
   var MAX_AUDIO_WAIT_MS = 6000;                 // hold the blackout for the music
@@ -156,6 +159,11 @@
   function isOwner() {
     var u = (currentUsername() || '').toLowerCase();
     return OWNER_USERNAMES.indexOf(u) !== -1;
+  }
+
+  function isTester() {
+    var u = (currentUsername() || '').toLowerCase();
+    return TESTER_USERNAMES.indexOf(u) !== -1;
   }
 
   function getToken() {
@@ -1060,12 +1068,24 @@
   }
 
   function startQuiz() {
+    if (ANNIV_PENDING && isTester() && !isOwner()) { renderTesterLocked(); return; }
     if (!ANNIV_PENDING && getDoneFlag()) { renderAlreadyDone(getDoneFlag()); return; }
     state.questions = buildQuiz();
     state.answers = new Array(state.questions.length).fill(null);
     state.qIndex = 0;
     state.trapped = false;
     renderQuiz();
+  }
+
+  function renderTesterLocked() {
+    var inner = el('<div class="anniv-inner"></div>');
+    inner.appendChild(stageLabel('LOCKED'));
+    inner.appendChild(el('<div class="anniv-title">QUIZ NOT AVAILABLE</div>'));
+    inner.appendChild(el('<div class="anniv-sub">Answering questions is not part of your testing area. You can watch the trailer and read the rules, but the quiz stays locked.</div>'));
+    setStage(inner);
+    var back = el('<button class="anniv-btn ghost">Back</button>');
+    back.onclick = renderRules;
+    setFoot([back]);
   }
 
   function renderQuiz() {
@@ -1209,7 +1229,7 @@
    * ------------------------------------------------------------------ */
   window.JqrgAnniversary = {
     launch: function () {
-      if (ANNIV_PENDING && !isOwner()) {
+      if (ANNIV_PENDING && !isOwner() && !isTester()) {
         ensureRoot();
         shell('FIRST ANNIVERSARY');
         var inner = el('<div class="anniv-inner"></div>');
