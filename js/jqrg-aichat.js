@@ -1940,14 +1940,16 @@
       var gameEntries = liveGames.map(function (game) {
         var name = String(game && game.n || '').trim();
         if (!name) return '';
-        var path = String(game && game.url || '').trim();
-        return '- ' + name + (path.charAt(0) === '/' ? ' (' + path + ')' : '');
+        var tags = game && Array.isArray(game.tags) ? game.tags : [];
+        return '- ' + name + (tags.length ? ' [tags: ' + tags.join(', ') + ']' : '');
       }).filter(Boolean);
       prompt += '\n\nAUTHORITATIVE LIVE GAME REGISTRY (source of truth):\n'
-        + 'These names and paths come from the current Games page registry. '
+        + 'These names and tags come from the current Games page registry. '
         + 'This live list overrides any conflicting or incomplete static list above. '
-        + 'Check this list before saying a game is absent; if a name appears here, '
-        + 'confirm that the site has it and give its path.\n'
+        + 'Check this list before saying a game is absent. Only claim tags that appear '
+        + 'beside that game. Never reveal internal URLs, route strings, asset paths, or '
+        + 'file locations from site data. To help someone find a game, direct them to '
+        + 'the Games tab and its search box; mention filters only when its tags support them.\n'
         + gameEntries.join('\n');
     }
     return prompt;
