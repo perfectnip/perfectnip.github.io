@@ -203,7 +203,7 @@
       subState.active    = true;
       subState.anonymous = false;
       subState.status    = 'admin';
-      subState.tier      = 'admin';
+      subState.tier      = 'plus';
       subState.checked   = true;
       subState.lastFetch = Date.now();
       renderSubBadge();
@@ -501,8 +501,7 @@
 
     if (subState.active) {
       var adminUser = isAdmin();
-      var tierLabel = adminUser ? 'Admin'
-                   : subState.tier === 'plus' ? 'Plus'
+      var tierLabel = subState.tier === 'plus' ? 'Premium Plus'
                    : 'Premium';
       var badge = el('button', {
         type: 'button',

@@ -3,11 +3,9 @@ const ALLOWED_ORIGINS = [
   'https://perfectnip.github.io',
   'https://discord.jimmyqrg.com',
   'https://lausd.schoology.com',
-  'https://unlinewize.jimmyqrg.com',
   'https://ulw-app.fly.dev',
   'https://mcraft.fly.dev',
   'https://rammerhead.fly.dev',
-  'https://ulw-app.fly.dev',
   'https://jchat.fly.dev',
 ];
 
@@ -257,7 +255,7 @@ async function hasPremiumAccess(env, user) {
 
 async function effectiveSubscriptionTier(env, user) {
   if (!user) return null;
-  if (ADMIN_USERNAMES.has((user.username || '').toLowerCase())) return 'admin';
+  if (ADMIN_USERNAMES.has((user.username || '').toLowerCase())) return 'plus';
   let best = complimentaryTier(user) || null;
   const rw = await resolveAnnivRewardTier(env, user.id);
   if (annivTierRank(rw) > annivTierRank(best)) best = rw;
@@ -605,6 +603,7 @@ async function handleSubStatus(request, env, origin) {
     return jsonResponse({
       active:               true,
       status:               'admin',
+      tier:                 'plus',
       current_period_end:   null,
       cancel_at_period_end: false,
       user:                 { id: user.id, username: user.username },

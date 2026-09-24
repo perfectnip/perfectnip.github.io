@@ -45,7 +45,7 @@ js/                   ← runtime browser scripts AND one-shot build/migration .
                         audit-loader, strip-ads, fix-loader-newline, update-inject)
 
 cloudflare-worker/    ← DeepSeek proxy. Allowed origins: perfectnip.github.io, jchat.fly.dev,
-                        unlinewize.jimmyqrg.com, etc. See worker.js → ALLOWED_ORIGINS.
+                        ulw-app.fly.dev, etc. See worker.js → ALLOWED_ORIGINS.
 
 schoology-overlay.html ← 5.3MB fullscreen cloak shown when GoGuardian is detected
 sw.js                 ← service worker (cache versioned `app-v{N}`)
