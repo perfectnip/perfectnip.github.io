@@ -2290,9 +2290,8 @@
     var headers = { 'Content-Type': 'application/json' };
     var tok = getAuthToken();
     if (tok) headers['Authorization'] = 'Bearer ' + tok;
-    Promise.all([getTurnstileToken(), getRecaptchaToken('chat')]).then(function (tokens) {
-      if (tokens[0]) headers['X-Turnstile-Token'] = tokens[0];
-      if (tokens[1]) headers['X-Recaptcha-Token'] = tokens[1];
+    getRecaptchaToken('chat').then(function (recaptchaToken) {
+      if (recaptchaToken) headers['X-Recaptcha-Token'] = recaptchaToken;
       return fetch(url, {
         method: 'POST',
         headers: headers,
@@ -2308,22 +2307,30 @@
     }).then(function (resp) {
       if (!resp.ok) {
         return resp.text().then(function (t) {
-          /* 402 = subscription required (worker enforces the upload gate
-           * server-side). Surface it through a typed error so the
-           * onError handler can show the paywall instead of a generic
-           * "HTTP 402" message. */
           if (resp.status === 402 || resp.status === 401 || resp.status === 403) {
             var data = null;
             try { data = JSON.parse(t); } catch (_) {}
-            var msg = (data && data.message) || (
+            var providerError = data && data.error;
+            var detail = data && (data.message || data.detail);
+            if (!detail && providerError && typeof providerError === 'object') {
+              detail = providerError.message || providerError.type;
+            }
+            if (!detail && typeof providerError === 'string' && providerError !== 'subscription_required') {
+              detail = providerError;
+            }
+            var isSubscriptionError = !!(data && (
+              data.code === 'subscription_required' ||
+              providerError === 'subscription_required' ||
+              data.feature === 'file_uploads'
+            ));
+            var msg = detail || (
               resp.status === 401 ? 'Sign-in required' :
-              resp.status === 402 ? 'Subscription required' :
+              resp.status === 402 ? 'The AI service rejected the request (HTTP 402)' :
                                     'Bot check failed — please refresh the page'
             );
             var err = new Error(msg);
-            err.code = (data && data.error) || (
+            err.code = (data && data.code) || (isSubscriptionError ? 'subscription_required' :
               resp.status === 401 ? 'auth_required' :
-              resp.status === 402 ? 'subscription_required' :
                                     'captcha_failed'
             );
             err.status = resp.status;
