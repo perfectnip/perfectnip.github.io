@@ -3607,8 +3607,9 @@ function requestProxySession(targetUrl){
   });
 }
 function _openProxiedApp(targetUrl){
-  var name=encodeURIComponent((targetUrl||'').split('/')[2]||'');
-  window.open('/o/index.html?url='+encodeURIComponent(targetUrl)+'&app='+name,'_blank','noopener');
+  var url=String(targetUrl||'');
+  if(!/^https?:\/\//i.test(url)){url=url.charAt(0)==='/'?window.location.origin+url:'https://'+url;}
+  window.open(PROXY_BASE+encodeURIComponent(url),'_blank','noopener');
 }
 
 // Search engines used when the user types something that's not a URL into
@@ -4599,12 +4600,12 @@ function _rA(){
   filtered.forEach(function(a){
     var cls='t-a';
     var click;
-    if(a.proxy){
-      var rawUrl=(a.url.startsWith('http')?a.url:window.location.origin+'/'+a.url).replace(/'/g,"\\'");
-      click=' onclick="_openProxiedApp(\''+rawUrl+'\')"';
-    }else{
+    if(a.n==='JimmyQrg Tools'){
       var escaped=a.url.replace(/'/g,"\\'");
       click=' onclick="_lP(\''+escaped+'\',\'apps\')"';
+    }else{
+      var rawUrl=a.url.replace(/'/g,"\\'");
+      click=' onclick="_openProxiedApp(\''+rawUrl+'\')"';
     }
     html+='<div class="'+cls+'"'+click+'>'+
       '<div class="skeleton skeleton-tile"></div>'+
@@ -5183,8 +5184,8 @@ function openPrivacyPolicy(){
       '<p><strong>Do we process any sensitive personal information?</strong> No. We never ask for, collect, or process sensitive personal information (such as passwords, payment details, or government IDs). You should never enter sensitive information into any embedded demo, app, or proxy tile, as those load third-party content outside of our control.</p>'+
       '<p><strong>Do we collect any information from third parties?</strong> No. We do not collect, buy, or receive any information about you from third parties.</p>'+
       '<p><strong>How do we process your information?</strong> Any information you configure (favorites, settings, cloaks, etc.) is processed locally on your device to personalize your experience. It is never transmitted to us or to any third party by us.</p>'+
-      '<p><strong>Third-party content and embedded services.</strong> Our Services embed third-party interactive demos, web applications, and proxy services (including, but not limited to, <em>unlinewize.jimmyqrg.com</em>, <em>noblock.jimmyqrg.com</em>, and various hosted content origins) inside iframes. When you launch any tile, your browser connects directly to that third-party origin. Those third parties and the SDKs they use (such as Unity, Construct, createjs, howler, and similar) may collect usage data, set cookies, or process input you provide, according to their own privacy practices. We do not control and are not responsible for the privacy practices of any third-party content. Please review the privacy policy of each provider before using their content.</p>'+
-      '<p><strong>Proxied / unblocker traffic.</strong> Tiles that load through a proxy (for example apps like TikTok, YouTube, GitHub, Twitch, Instagram, Deepseek, and Bloxd.io) route your request through a third-party proxy such as <em>unlinewize.jimmyqrg.com</em>. The proxy operator, the destination site, and any network along the way may observe your traffic. Do not log in, enter passwords, or share personal data through these proxies.</p>'+
+      '<p><strong>Third-party content and embedded services.</strong> Our Services embed third-party interactive demos, web applications, and proxy services (including, but not limited to, <em>ulw-app.fly.dev</em>, <em>noblock.jimmyqrg.com</em>, and various hosted content origins) inside iframes. When you launch any tile, your browser connects directly to that third-party origin. Those third parties and the SDKs they use (such as Unity, Construct, createjs, howler, and similar) may collect usage data, set cookies, or process input you provide, according to their own privacy practices. We do not control and are not responsible for the privacy practices of any third-party content. Please review the privacy policy of each provider before using their content.</p>'+
+      '<p><strong>Proxied / unblocker traffic.</strong> Tiles that load through a proxy (for example apps like TikTok, YouTube, GitHub, Twitch, Instagram, Deepseek, and Bloxd.io) route your request through a third-party proxy such as <em>ulw-app.fly.dev</em>. The proxy operator, the destination site, and any network along the way may observe your traffic. Do not log in, enter passwords, or share personal data through these proxies.</p>'+
       '<p><strong>In what situations and with which parties do we share personal information?</strong> We do not share personal information because we do not collect any. However, when you open embedded content, your browser makes normal network requests (IP address, user agent, referrer, etc.) to that third-party origin, which is inherent to how the web works.</p>'+
       '<p><strong>How do we keep your information safe?</strong> Because all of your preferences remain on your device, the main safeguard is your own browser. No electronic transmission over the internet or information storage technology can be guaranteed to be 100% secure.</p>'+
       '<p><strong>What are your rights?</strong> Depending on where you are located geographically, applicable privacy law may give you certain rights regarding your personal information. Because we do not hold any personal information about you, most requests should be directed to the specific third-party service you have used.</p>'+
