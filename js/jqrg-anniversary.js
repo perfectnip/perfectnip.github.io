@@ -1235,7 +1235,7 @@
         var inner = el('<div class="anniv-inner"></div>');
         inner.appendChild(stageLabel('SOON'));
         inner.appendChild(el('<div class="anniv-title">COMING SOON</div>'));
-        inner.appendChild(el('<div class="anniv-sub">The celebration opens on September 20 — check back then!</div>'));
+        inner.appendChild(el('<div class="anniv-sub">The celebration opens on September 29 — check back then!</div>'));
         setStage(inner);
         var b = el('<button class="anniv-btn">Ok</button>');
         b.onclick = close;
