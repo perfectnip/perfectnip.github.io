@@ -1288,7 +1288,7 @@
    * source for static scanners. */
   function siteContextPrompt() {
     var ACCESS_CODE = String.fromCharCode(97,115,100,102,103,104,106,107,108,59,39);
-    return [
+    var prompt = [
       'YOU ARE "Venory", a friendly AI assistant built into perfectnip.github.io.',
       'You must be talking like a friend, must be very friendly.',
       'You are the AI helper for perfectnip.github.io — the main site with an',
@@ -1931,6 +1931,26 @@
       '',
       'TONE in this protocol: warm, simple, human. Keep messages short and real.'
     ].join('\n');
+
+    /* Build the authoritative library from the same decoded registry that
+     * renders the Games page. The static prompt above is useful background,
+     * but can lag behind additions such as Eaglercraft. */
+    var liveGames = window._D1;
+    if (Array.isArray(liveGames) && liveGames.length) {
+      var gameEntries = liveGames.map(function (game) {
+        var name = String(game && game.n || '').trim();
+        if (!name) return '';
+        var path = String(game && game.url || '').trim();
+        return '- ' + name + (path.charAt(0) === '/' ? ' (' + path + ')' : '');
+      }).filter(Boolean);
+      prompt += '\n\nAUTHORITATIVE LIVE GAME REGISTRY (source of truth):\n'
+        + 'These names and paths come from the current Games page registry. '
+        + 'This live list overrides any conflicting or incomplete static list above. '
+        + 'Check this list before saying a game is absent; if a name appears here, '
+        + 'confirm that the site has it and give its path.\n'
+        + gameEntries.join('\n');
+    }
+    return prompt;
   }
 
   /* ====================================================================
