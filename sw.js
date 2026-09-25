@@ -1,4 +1,4 @@
-const CACHE_NAME = 'app-v146';
+const CACHE_NAME = 'app-v147';
 
 const urlsToCache = [
   // ============ ROOT ============
@@ -153,6 +153,7 @@ const urlsToCache = [
   '/game-images/games/magic-tiles-3.png',
   '/game-images/games/melon-playground.png',
   '/game-images/games/minecraft.png',
+  '/game-images/games/mk48-io.png',
   '/game-images/games/ovo.png',
   '/game-images/games/ovo2.png',
   '/game-images/games/pacman.png',
@@ -226,14 +227,20 @@ const urlsToCache = [
 
   // ============ MEDIA-C ============
   '/game-images/apps/deepseek.png',
+  '/game-images/apps/facebook.png',
   '/game-images/apps/gemini.png',
   '/game-images/apps/github.png',
   '/game-images/apps/gn-math.png',
   '/game-images/apps/instagram.png',
   '/game-images/apps/jtools.png',
+  '/game-images/apps/snapchat.png',
+  '/game-images/apps/soundcloud.png',
+  '/game-images/apps/spotify.png',
   '/game-images/apps/tiktok.png',
   '/game-images/apps/twitch.png',
+  '/game-images/apps/x.png',
   '/game-images/apps/youtube.png',
+  '/game-images/apps/youtube-music.png',
 
   // ============ MEDIA-D ============
   '/game-images/unblocks/hackwize.png',
