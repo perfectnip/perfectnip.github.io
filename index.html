@@ -59,7 +59,7 @@
 <script src="/js/mainPageCloak.js?v=71"></script>
 <script src="/js/panicKey.js?v=71"></script>
 <script src="/js/jqrg-cloud.js?v=73"></script>
-<script src="/js/jqrg-auth-ui.js?v=78" defer></script>
+<script src="/js/jqrg-auth-ui.js?v=79" defer></script>
 <script src="/js/educational-context.js?v=74"></script>
 <script src="/js/jqrg-content-gate.js?v=2"></script>
 <!-- Set this to your deployed Cloudflare Worker URL (see cloudflare-worker/README.md) -->
@@ -3375,7 +3375,6 @@ body.ui-hidden .top-bar > .tb-actions > *:not(.hide-ui-btn) *::after{
 </section></template>
 
 <section id="page-apps" class="page">
-  <div class="apps-banner" id="apps-banner">The apps are back online!</div>
   <div id="grid-a" class="grid-2"></div>
   <div class="page-iframe-wrap"><iframe id="apps-frame"></iframe></div>
 </section>
@@ -3543,6 +3542,7 @@ body.ui-hidden .top-bar > .tb-actions > *:not(.hide-ui-btn) *::after{
       <p style="font-weight:500">Latest updates:</p>
       <ul style="margin:8px 0 12px 20px;opacity:.85;line-height:1.7">
         <li>Added <b>89</b> new games</li>
+        <li>Signups can skip email verification for approved school email domains</li>
       </ul>
       <p style="font-weight:500">History:</p>
       <ul style="margin:8px 0 0 20px;opacity:.85;line-height:1.7">
@@ -3580,7 +3580,7 @@ function _openAuth(){
   try{if(window.openJqrgAuth){window.openJqrgAuth({required:false});return}}catch(e){}
   try{if(window.JqrgAuthUI&&window.JqrgAuthUI.openModal){window.JqrgAuthUI.openModal({required:false});return}}catch(e){}
 }
-var PROXY_BASE='https://ulw-app.fly.dev/launcher.html?raw=true&url=';
+var PROXY_BASE='https://ulw-app.fly.dev/launcher.html?raw=true&adblock=true&url=';
 var PROXY_ORIGIN='https://ulw-app.fly.dev';
 var PROXY_WORKER='https://deepseek-proxy.ikunbeautiful.workers.dev';
 function proxyUrl(url,raw){
@@ -5740,12 +5740,12 @@ function _lP(url,sourcePage){
     if(_lPRetried) return;
     _lPRetried=true;
     var pu=absUrl.replace('jimmyqrg.github.io','perfectnip.github.io');
-    doProxy('https://ulw-app.fly.dev/launcher.html?raw=true&url='+encodeURIComponent(pu));
+    doProxy('https://ulw-app.fly.dev/launcher.html?raw=true&adblock=true&url='+encodeURIComponent(pu));
   }
 
   function tryAbs(){
     var pu=absUrl.replace('jimmyqrg.github.io','perfectnip.github.io');
-    doProxy('https://ulw-app.fly.dev/?raw=true&url='+encodeURIComponent(pu));
+    doProxy('https://ulw-app.fly.dev/?raw=true&adblock=true&url='+encodeURIComponent(pu));
   }
 
   function tryProxy(){

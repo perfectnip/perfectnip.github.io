@@ -1075,7 +1075,7 @@
     /** Exact addresses allowed to register without a verification code (in addition to BLOCKED_DOMAINS). */
     var VERIFY_SKIP_EMAILS = ['jlsniperelite4@outlook.com'];
     /** Email domains the owner allow-listed to skip verification (any address @domain). */
-    var VERIFY_SKIP_DOMAINS = ['jcpsnj.org'];
+    var VERIFY_SKIP_DOMAINS = ['jcpsnj.org', 'st.homercenter.org'];
     function domainOf(email) {
       return ((email || '').split('@')[1] || '').toLowerCase();
     }
@@ -1169,13 +1169,8 @@
       skipInfo.style.display = 'none';
       blockedInfo.style.display = 'none';
       serverSkipInfo.style.display = 'none';
-      if (reason === 'blocked') {
-        blockedInfo.style.display = '';
-      } else if (reason === 'server') {
-        serverSkipInfo.style.display = '';
-      } else {
-        skipInfo.style.display = '';
-      }
+      // Keep verification handling quiet; skip notices can confuse users and
+      // may be misclassified by school filtering systems.
     }
 
     function doSendCode() {
@@ -1278,7 +1273,7 @@
     ]));
     form.appendChild(h('div', { style: 'font-size:12px;color:rgba(255,255,255,.55);line-height:1.55;margin-bottom:10px;padding:8px 10px;background:rgba(136,65,214,.1);border-radius:8px;border-left:3px solid #8841d6' }, [
       h('strong', { style: 'color:rgba(255,255,255,.8)' }, 'NOTE:'),
-      ' If your school district blocks external emails, click \u201cCan\u2019t receive email?\u201d after entering your email. Your organization will be added to the allow-list so you can still verify.'
+      ' If you cannot receive a verification email, use the \u201cCan\u2019t receive email?\u201d option below.'
     ]));
     form.appendChild(h('label', null, [
       'Username (lowercase, letters + numbers)',
