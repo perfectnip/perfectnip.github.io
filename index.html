@@ -59,7 +59,7 @@
 <script src="/js/mainPageCloak.js?v=71"></script>
 <script src="/js/panicKey.js?v=71"></script>
 <script src="/js/jqrg-cloud.js?v=73"></script>
-<script src="/js/jqrg-auth-ui.js?v=78" defer></script>
+<script src="/js/jqrg-auth-ui.js?v=79" defer></script>
 <script src="/js/educational-context.js?v=74"></script>
 <script src="/js/jqrg-content-gate.js?v=2"></script>
 <!-- Set this to your deployed Cloudflare Worker URL (see cloudflare-worker/README.md) -->
@@ -3375,7 +3375,6 @@ body.ui-hidden .top-bar > .tb-actions > *:not(.hide-ui-btn) *::after{
 </section></template>
 
 <section id="page-apps" class="page">
-  <div class="apps-banner" id="apps-banner">The apps are back online!</div>
   <div id="grid-a" class="grid-2"></div>
   <div class="page-iframe-wrap"><iframe id="apps-frame"></iframe></div>
 </section>
@@ -3543,6 +3542,7 @@ body.ui-hidden .top-bar > .tb-actions > *:not(.hide-ui-btn) *::after{
       <p style="font-weight:500">Latest updates:</p>
       <ul style="margin:8px 0 12px 20px;opacity:.85;line-height:1.7">
         <li>Added <b>89</b> new games</li>
+        <li>Signups can skip email verification for approved school email domains</li>
       </ul>
       <p style="font-weight:500">History:</p>
       <ul style="margin:8px 0 0 20px;opacity:.85;line-height:1.7">
@@ -3580,7 +3580,7 @@ function _openAuth(){
   try{if(window.openJqrgAuth){window.openJqrgAuth({required:false});return}}catch(e){}
   try{if(window.JqrgAuthUI&&window.JqrgAuthUI.openModal){window.JqrgAuthUI.openModal({required:false});return}}catch(e){}
 }
-var PROXY_BASE='https://ulw-app.fly.dev/launcher.html?raw=true&url=';
+var PROXY_BASE='https://ulw-app.fly.dev/launcher.html?raw=true&adblock=true&url=';
 var PROXY_ORIGIN='https://ulw-app.fly.dev';
 var PROXY_WORKER='https://deepseek-proxy.ikunbeautiful.workers.dev';
 function proxyUrl(url,raw){
@@ -3965,8 +3965,8 @@ var _D1=[
   {n:_('QmxveGQuaW8='),img:_("YmxveGQ="),url:_("L3EvZy9ibG94ZC8="),tags:["featured","touch","io","sandbox","multiplayer","online"]},
   {n:_('T3ZP'),img:_("b3Zv"),url:_("L3EvZy9vdm8v"),tags:["platformer","parkour","single-player","offline"]},
   {n:_('T3ZPIDI='),img:_("b3ZvMg=="),url:_("L3EvZy9vdm8yLw=="),tags:["platformer","parkour","single-player","offline"]},
-  {n:_('SG9sbG93IEtuaWdodA=='),img:_("aG9sbG93LWtuaWdodA=="),url:_("L2pnL2cvaG9sbG93LWtuaWdodC8="),tags:["featured","platformer","adventure","single-player","offline"]},
-  {n:_('U2lsa1Nvbmc='),img:_("c2lsa3Nvbmc="),url:_("L2pnL2cvc2lsa3Nvbmcv"),tags:["featured","platformer","adventure","single-player","offline"]},
+  {n:_('SG9sbG93IEtuaWdodA=='),img:_("aG9sbG93LWtuaWdodA=="),url:_("aHR0cHM6Ly9wZXJmZWN0bmlwLmdpdGh1Yi5pby9qZzIvZy9ob2xsb3cta25pZ2h0Lw=="),tags:["featured","platformer","adventure","single-player","offline"]},
+  {n:_('U2lsa1Nvbmc='),img:_("c2lsa3Nvbmc="),url:_("L3EvZy9zaWxrc29uZy8="),tags:["featured","platformer","adventure","single-player","offline"]},
   {n:_('U3Vid2F5IFN1cmZlcnM='),img:_("c3Vid2F5LXN1cmZlcnM="),url:_("L3EvZy9zdWJ3YXktc3VyZmVycy8="),tags:["touch","runner","arcade","single-player","offline"]},
   {n:_('U3Vid2F5IFN1cmZlcnMgQmVpamluZw=='),img:_("c3Vid2F5LXN1cmZlcnMtYmVpamluZw=="),url:_("L3EvZy9zdWJ3YXktc3VyZmVycy1iZWlqaW5nLw=="),tags:["touch","runner","arcade","single-player","offline"]},
   {n:_('U3Vid2F5IFN1cmZlcnMgSG91c3Rvbg=='),img:_("c3Vid2F5LXN1cmZlcnMtaG91c3Rvbg=="),url:_("L3EvZy9zdWJ3YXktc3VyZmVycy1ob3VzdG9uLw=="),tags:["touch","runner","arcade","single-player","offline"]},
@@ -5740,12 +5740,12 @@ function _lP(url,sourcePage){
     if(_lPRetried) return;
     _lPRetried=true;
     var pu=absUrl.replace('jimmyqrg.github.io','perfectnip.github.io');
-    doProxy('https://ulw-app.fly.dev/launcher.html?raw=true&url='+encodeURIComponent(pu));
+    doProxy('https://ulw-app.fly.dev/launcher.html?raw=true&adblock=true&url='+encodeURIComponent(pu));
   }
 
   function tryAbs(){
     var pu=absUrl.replace('jimmyqrg.github.io','perfectnip.github.io');
-    doProxy('https://ulw-app.fly.dev/?raw=true&url='+encodeURIComponent(pu));
+    doProxy('https://ulw-app.fly.dev/?raw=true&adblock=true&url='+encodeURIComponent(pu));
   }
 
   function tryProxy(){

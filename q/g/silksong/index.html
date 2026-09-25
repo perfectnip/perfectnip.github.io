@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="Hollow Knight: Silksong WebGL game">
+  <base href="https://raw.githubusercontent.com/perfectnip/silksong-data/main/">
+  <title>Hollow Knight: Silksong</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#08090d;color:#f4f1ed;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+    #game{position:fixed;inset:0;width:100%;height:100%;display:block;background:#08090d;outline:none}
+    #loading{position:fixed;inset:0;z-index:2;display:grid;place-content:center;justify-items:center;gap:16px;padding:24px;background:radial-gradient(ellipse at center,#251820 0,#101116 58%,#08090d 100%);text-align:center}
+    #title{margin:0;font-family:Georgia,serif;font-size:clamp(28px,6vw,56px);font-weight:500;letter-spacing:.12em;text-transform:uppercase}
+    #message{max-width:min(640px,90vw);color:#d1c8cb;font-size:14px;line-height:1.5}
+    #track{width:min(440px,82vw);height:8px;overflow:hidden;border:1px solid #6e545e;border-radius:99px;background:#17151b}
+    #fill{width:0;height:100%;background:linear-gradient(90deg,#9d5268,#e5b6a0);transition:width .15s ease}
+    #error{display:none;max-width:min(680px,90vw);color:#ffb5b5;white-space:pre-wrap;font:13px/1.5 ui-monospace,monospace}
+    #fullscreen{position:fixed;right:14px;top:14px;z-index:3;border:1px solid #ffffff4d;border-radius:8px;padding:9px 12px;background:#111a;color:#fff;font:inherit;cursor:pointer}
+    #fullscreen:hover{background:#333b}
+  </style>
+  <!-- JQRG_CLOUD_INJECT_BEGIN -->
+  <script src="/js/jqrg-cloud.js" defer></script>
+  <script src="/js/jqrg-auth-ui.js" defer></script>
+  <!-- JQRG_CLOUD_INJECT_END -->
+  <script src="/js/gg-detect.js"></script>
+  <script src="jszip.js"></script>
+</head>
+<body>
+  <canvas id="game" tabindex="-1"></canvas>
+  <button id="fullscreen" type="button">Fullscreen</button>
+  <section id="loading" aria-live="polite">
+    <h1 id="title">Silksong</h1>
+    <div id="message">First launch downloads about 1.9 GB of game data and saves it in this browser. Later launches use the saved data.</div>
+    <div id="track" role="progressbar" aria-label="Loading game"><div id="fill"></div></div>
+    <pre id="error"></pre>
+  </section>
+  <script>
+  (function(){
+    'use strict';
+    var ROOT='https://raw.githubusercontent.com/perfectnip/silksong-data/main/';
+    var CACHE_NAME='jqrg-silksong-assets-v1';
+    var status=document.getElementById('message');
+    var fill=document.getElementById('fill');
+    var errorBox=document.getElementById('error');
+    var loading=document.getElementById('loading');
+    var originalFetch=window.fetch.bind(window);
+
+    function cacheKey(name){
+      return new Request(location.origin+'/__silksong_cache__/'+encodeURIComponent(name));
+    }
+    function setProgress(percent){fill.style.width=Math.max(0,Math.min(100,percent))+'%';}
+    function fail(error){
+      console.error('Silksong failed to load',error);
+      status.textContent='The game could not load.';
+      errorBox.style.display='block';
+      errorBox.textContent=error&&error.message?error.message:String(error);
+    }
+
+    // Unity requests extracted Addressables by filename. Serve those files
+    // from Cache Storage after the split archive has been unpacked once.
+    window.fetch=async function(resource,options){
+      var url=typeof resource==='string'?resource:resource.url;
+      if(url&&url.indexOf('StreamingAssets/')!==-1){
+        var name=decodeURIComponent(url.split(/[?#]/)[0].split('/').pop());
+        try{
+          var cache=await caches.open(CACHE_NAME);
+          var cached=await cache.match(cacheKey(name));
+          if(cached)return cached;
+        }catch(e){console.warn('Silksong cache lookup failed',e);}
+      }
+      return originalFetch(resource,options);
+    };
+
+    async function fetchArchive(){
+      var chunks=[];
+      var total=100;
+      var received=0;
+      for(var i=1;i<=total;i++){
+        status.textContent='Downloading game data · part '+i+' of '+total;
+        var response=await originalFetch(ROOT+'StreamingAssets/aa/WebGL.zip.part'+i);
+        if(!response.ok)throw new Error('Could not download game data part '+i+' (HTTP '+response.status+').');
+        var blob=await response.blob();
+        chunks.push(blob);
+        received+=blob.size;
+        var mb=(received/1048576).toFixed(0);
+        setProgress(i/total*35);
+        status.textContent='Downloading game data · part '+i+' of '+total+' · '+mb+' MB';
+      }
+      return new Blob(chunks,{type:'application/zip'});
+    }
+
+    async function cacheAddressables(zipBlob){
+      status.textContent='Opening game data…';
+      var zip=await JSZip.loadAsync(zipBlob,{checkCRC32:false});
+      var files=Object.values(zip.files).filter(function(file){return !file.dir;});
+      if(!files.length)throw new Error('The downloaded game archive was empty.');
+      var cache=await caches.open(CACHE_NAME);
+      var complete=0;
+      var batchSize=4;
+      for(var i=0;i<files.length;i+=batchSize){
+        var batch=files.slice(i,i+batchSize);
+        await Promise.all(batch.map(async function(file){
+          var name=file.name.split('/').pop();
+          if(!name)return;
+          var data=await file.async('blob');
+          await cache.put(cacheKey(name),new Response(data));
+          complete++;
+        }));
+        setProgress(35+(complete/files.length)*55);
+        status.textContent='Preparing game data · '+complete+' of '+files.length+' files';
+        await new Promise(function(resolve){setTimeout(resolve,0);});
+      }
+      await cache.put(cacheKey('CACHE_COMPLETE'),new Response('ok'));
+    }
+
+    async function startUnity(){
+      status.textContent='Starting Silksong…';
+      var loadingBar=document.createElement('div');
+      loadingBar.style.cssText='position:fixed;left:9%;right:9%;bottom:8%;height:5px;background:#342a30;border-radius:9px;overflow:hidden';
+      var unityFill=document.createElement('div');
+      unityFill.style.cssText='height:100%;width:0;background:#df9ba9;transition:width .15s';
+      loadingBar.appendChild(unityFill);
+      loading.appendChild(loadingBar);
+      var config={
+        dataUrl:ROOT+'Build/w-pt.data.unityweb',
+        frameworkUrl:ROOT+'Build/w-pt.framework.js.unityweb',
+        codeUrl:ROOT+'Build/w-pt.wasm.unityweb',
+        streamingAssetsUrl:ROOT+'StreamingAssets',
+        companyName:'Team Cherry',productName:'Hollow Knight: Silksong',productVersion:'1.0',
+        showBanner:function(message,type){
+          if(type==='error')fail(new Error(message));
+          else console.warn(message);
+        }
+      };
+      await new Promise(function(resolve,reject){
+        var script=document.createElement('script');
+        script.src=ROOT+'Build/w-pt.loader.js';
+        script.onload=resolve;
+        script.onerror=function(){reject(new Error('Could not load the Unity WebGL loader.'));};
+        document.head.appendChild(script);
+      });
+      await createUnityInstance(document.getElementById('game'),config,function(progress){
+        unityFill.style.width=(progress*100)+'%';
+        setProgress(90+progress*10);
+      });
+      loading.remove();
+      document.getElementById('game').focus();
+    }
+
+    document.getElementById('fullscreen').addEventListener('click',function(){
+      var canvas=document.getElementById('game');
+      if(canvas.requestFullscreen)canvas.requestFullscreen();
+    });
+
+    (async function(){
+      try{
+        if(!('caches' in window))throw new Error('This browser does not support the storage required to prepare the game.');
+        var cache=await caches.open(CACHE_NAME);
+        var complete=await cache.match(cacheKey('CACHE_COMPLETE'));
+        if(!complete){
+          await cacheAddressables(await fetchArchive());
+        }else{
+          status.textContent='Loading saved game data…';
+          setProgress(90);
+        }
+        await startUnity();
+      }catch(error){fail(error);}
+    })();
+  })();
+  </script>
+</body>
+</html>
