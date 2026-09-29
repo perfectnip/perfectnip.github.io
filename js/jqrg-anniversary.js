@@ -13,7 +13,7 @@
   /* Pending gate. Flip to false on release day (keep in sync with the
    * server's ANNIVERSARY_RELEASED flag). While pending, only jimmyqrg can
    * open the experience and he can try infinitely (test mode). */
-  var ANNIV_PENDING = true;
+  var ANNIV_PENDING = false;
   var OWNER_USERNAMES = ['jimmyqrg'];
   // Testers can open the experience before release, but the quiz is not part of
   // what they are allowed to test — they can watch the trailer and rules only.
@@ -1235,7 +1235,7 @@
         var inner = el('<div class="anniv-inner"></div>');
         inner.appendChild(stageLabel('SOON'));
         inner.appendChild(el('<div class="anniv-title">COMING SOON</div>'));
-        inner.appendChild(el('<div class="anniv-sub">The celebration opens on September 20 — check back then!</div>'));
+        inner.appendChild(el('<div class="anniv-sub">The celebration opens on September 29 — check back then!</div>'));
         setStage(inner);
         var b = el('<button class="anniv-btn">Ok</button>');
         b.onclick = close;

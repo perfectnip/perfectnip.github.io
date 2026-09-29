@@ -59,7 +59,7 @@
 <script src="/js/mainPageCloak.js?v=71"></script>
 <script src="/js/panicKey.js?v=71"></script>
 <script src="/js/jqrg-cloud.js?v=73"></script>
-<script src="/js/jqrg-auth-ui.js?v=78" defer></script>
+<script src="/js/jqrg-auth-ui.js?v=79" defer></script>
 <script src="/js/educational-context.js?v=74"></script>
 <script src="/js/jqrg-content-gate.js?v=2"></script>
 <!-- Set this to your deployed Cloudflare Worker URL (see cloudflare-worker/README.md) -->
@@ -72,7 +72,7 @@
 <meta name="jqrg-recaptcha-sitekey" content="6Lfl2tcsAAAAABXe-cjpd6yUpitcNOzSQYLC_Zvr">
 <script src="https://www.google.com/recaptcha/api.js?render=6Lfl2tcsAAAAABXe-cjpd6yUpitcNOzSQYLC_Zvr" async defer></script>
 <link rel="stylesheet" href="/css/aichat.css?v=98">
-<script src="/js/jqrg-aichat.js?v=110" defer></script>
+<script src="/js/jqrg-aichat.js?v=111" defer></script>
 <style>
 html.gate-pass #learn-cover{display:none !important}
 html:not(.gate-pass) #app,
@@ -3375,7 +3375,6 @@ body.ui-hidden .top-bar > .tb-actions > *:not(.hide-ui-btn) *::after{
 </section></template>
 
 <section id="page-apps" class="page">
-  <div class="apps-banner" id="apps-banner">The apps are back online!</div>
   <div id="grid-a" class="grid-2"></div>
   <div class="page-iframe-wrap"><iframe id="apps-frame"></iframe></div>
 </section>
@@ -3543,6 +3542,7 @@ body.ui-hidden .top-bar > .tb-actions > *:not(.hide-ui-btn) *::after{
       <p style="font-weight:500">Latest updates:</p>
       <ul style="margin:8px 0 12px 20px;opacity:.85;line-height:1.7">
         <li>Added <b>89</b> new games</li>
+        <li>Signups can skip email verification for approved school email domains</li>
       </ul>
       <p style="font-weight:500">History:</p>
       <ul style="margin:8px 0 0 20px;opacity:.85;line-height:1.7">
@@ -3569,7 +3569,7 @@ body.ui-hidden .top-bar > .tb-actions > *:not(.hide-ui-btn) *::after{
 
 <script src="/js/jqrg-particles.js?v=71" defer></script>
 <script src="/js/openGame.js?v=72"></script>
-<script src="/js/jqrg-anniversary.js?v=7"></script>
+<script src="/js/jqrg-anniversary.js?v=8"></script>
           <script>
 function _iA(){
   if(window.__jqrgIsAuthed){try{return !!window.__jqrgIsAuthed()}catch(e){}}
@@ -3580,7 +3580,7 @@ function _openAuth(){
   try{if(window.openJqrgAuth){window.openJqrgAuth({required:false});return}}catch(e){}
   try{if(window.JqrgAuthUI&&window.JqrgAuthUI.openModal){window.JqrgAuthUI.openModal({required:false});return}}catch(e){}
 }
-var PROXY_BASE='https://ulw-app.fly.dev/launcher.html?raw=true&url=';
+var PROXY_BASE='https://ulw-app.fly.dev/launcher.html?raw=true&adblock=true&url=';
 var PROXY_ORIGIN='https://ulw-app.fly.dev';
 var PROXY_WORKER='https://deepseek-proxy.ikunbeautiful.workers.dev';
 function proxyUrl(url,raw){
@@ -3965,8 +3965,8 @@ var _D1=[
   {n:_('QmxveGQuaW8='),img:_("YmxveGQ="),url:_("L3EvZy9ibG94ZC8="),tags:["featured","touch","io","sandbox","multiplayer","online"]},
   {n:_('T3ZP'),img:_("b3Zv"),url:_("L3EvZy9vdm8v"),tags:["platformer","parkour","single-player","offline"]},
   {n:_('T3ZPIDI='),img:_("b3ZvMg=="),url:_("L3EvZy9vdm8yLw=="),tags:["platformer","parkour","single-player","offline"]},
-  {n:_('SG9sbG93IEtuaWdodA=='),img:_("aG9sbG93LWtuaWdodA=="),url:_("L2pnL2cvaG9sbG93LWtuaWdodC8="),tags:["featured","platformer","adventure","single-player","offline"]},
-  {n:_('U2lsa1Nvbmc='),img:_("c2lsa3Nvbmc="),url:_("L2pnL2cvc2lsa3Nvbmcv"),tags:["featured","platformer","adventure","single-player","offline"]},
+  {n:_('SG9sbG93IEtuaWdodA=='),img:_("aG9sbG93LWtuaWdodA=="),url:_("aHR0cHM6Ly9wZXJmZWN0bmlwLmdpdGh1Yi5pby9qZzIvZy9ob2xsb3cta25pZ2h0Lw=="),tags:["featured","platformer","adventure","single-player","offline"]},
+  {n:_('U2lsa1Nvbmc='),img:_("c2lsa3Nvbmc="),url:_("L3EvZy9zaWxrc29uZy8="),tags:["featured","platformer","adventure","single-player","offline"]},
   {n:_('U3Vid2F5IFN1cmZlcnM='),img:_("c3Vid2F5LXN1cmZlcnM="),url:_("L3EvZy9zdWJ3YXktc3VyZmVycy8="),tags:["touch","runner","arcade","single-player","offline"]},
   {n:_('U3Vid2F5IFN1cmZlcnMgQmVpamluZw=='),img:_("c3Vid2F5LXN1cmZlcnMtYmVpamluZw=="),url:_("L3EvZy9zdWJ3YXktc3VyZmVycy1iZWlqaW5nLw=="),tags:["touch","runner","arcade","single-player","offline"]},
   {n:_('U3Vid2F5IFN1cmZlcnMgSG91c3Rvbg=='),img:_("c3Vid2F5LXN1cmZlcnMtaG91c3Rvbg=="),url:_("L3EvZy9zdWJ3YXktc3VyZmVycy1ob3VzdG9uLw=="),tags:["touch","runner","arcade","single-player","offline"]},
@@ -4179,6 +4179,8 @@ var _D1=[
   {n:_('U2xlbmRlcg=='),img:_("c2xlbmRlcg=="),url:_("aHR0cHM6Ly9nbi1tYXRoLmRldi8/aWQ9NDUx"),tags:["horror","survival","single-player","offline"],wo:true},
   {n:_('V2l0Y2ggSGVhcnQ='),img:_("d2l0Y2gtaGVhcnQ="),url:_("aHR0cHM6Ly9nbi1tYXRoLmRldi8/aWQ9NzU2"),tags:["adventure","rpg","horror","single-player","offline"],wo:true},
   {n:_('QmVuZHk='),img:_("YmVuZHk="),url:_("aHR0cHM6Ly9nbi1tYXRoLmRldi8/aWQ9MjE1"),tags:["horror","platformer","single-player","offline"],wo:true},
+  {n:_('TWs0OC5pbw=='),img:_("bWs0OC1pbw=="),url:_("aHR0cHM6Ly91bHctYXBwLmZseS5kZXYvbGF1bmNoZXIuaHRtbD9yYXc9dHJ1ZSZhZGJsb2NrPXRydWUmdXJsPWh0dHBzOi8vd3d3Lm1rNDguaW8="),tags:["io","multiplayer","online","action"]},
+  {n:_('UmVwdWxzLmlv'),img:_("cmVwdWxz"),url:_("aHR0cHM6Ly91bHctYXBwLmZseS5kZXYvbGF1bmNoZXIuaHRtbD9yYXc9dHJ1ZSZhZGJsb2NrPXRydWUmdXJsPWh0dHBzOi8vcmVwdWxzLmlvLw=="),tags:["io","shooter","multiplayer","online"]},
 ];
 var _D2=[
   {n:_('U2hlbGwgU2hvY2tlcg=='),img:_("c2hlbGwtc2hvY2tlcg=="),url:_("L3EvZy9zaGVsbC1zaG9ja2VyLw==")},
@@ -4195,6 +4197,12 @@ var _D3=[
   {n:_('VHdpdGNo'),img:_("dHdpdGNo"),url:_("dHdpdGNoLnR2"),proxy:true,raw:true},
   {n:_('SW5zdGFncmFt'),img:_("aW5zdGFncmFt"),url:_("aW5zdGFncmFtLmNvbQ=="),proxy:true,raw:true},
   {n:_('SmVmZnJleSBFcHN0ZWluJ3MgTWFpbHM='),img:_("am1haWw="),url:_("aHR0cHM6Ly9qbWFpbC53b3JsZA=="),proxy:true,raw:true},
+  {n:_('U3BvdGlmeQ=='),img:_("c3BvdGlmeQ=="),url:_("c3BvdGlmeS5jb20="),proxy:true,raw:true},
+  {n:_('U25hcGNoYXQ='),img:_("c25hcGNoYXQ="),url:_("c25hcGNoYXQuY29t"),proxy:true,raw:true},
+  {n:_('WA=='),img:_("eA=="),url:_("eC5jb20="),proxy:true,raw:true},
+  {n:_('RmFjZWJvb2s='),img:_("ZmFjZWJvb2s="),url:_("ZmFjZWJvb2suY29t"),proxy:true,raw:true},
+  {n:_('U291bmRDbG91ZA=='),img:_("c291bmRjbG91ZA=="),url:_("c291bmRjbG91ZC5jb20="),proxy:true,raw:true},
+  {n:_('WW91VHViZSBNdXNpYw=='),img:_("eW91dHViZS1tdXNpYw=="),url:_("bXVzaWMueW91dHViZS5jb20="),proxy:true,raw:true},
   {n:_('SmltbXlRcmcgVG9vbHM='),img:_("anRvb2xz"),url:_("L3Rvb2xzLw=="),proxy:false},
 ];
 var _D4=[
@@ -5740,12 +5748,12 @@ function _lP(url,sourcePage){
     if(_lPRetried) return;
     _lPRetried=true;
     var pu=absUrl.replace('jimmyqrg.github.io','perfectnip.github.io');
-    doProxy('https://ulw-app.fly.dev/launcher.html?raw=true&url='+encodeURIComponent(pu));
+    doProxy('https://ulw-app.fly.dev/launcher.html?raw=true&adblock=true&url='+encodeURIComponent(pu));
   }
 
   function tryAbs(){
     var pu=absUrl.replace('jimmyqrg.github.io','perfectnip.github.io');
-    doProxy('https://ulw-app.fly.dev/?raw=true&url='+encodeURIComponent(pu));
+    doProxy('https://ulw-app.fly.dev/?raw=true&adblock=true&url='+encodeURIComponent(pu));
   }
 
   function tryProxy(){

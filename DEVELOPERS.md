@@ -79,7 +79,27 @@ Some keys (e.g. giant ephemeral caches) shouldn't sync. Add them at runtime via 
 
 ## Games
 
-Game files are located in folder `jg/g/`
+Game files are split across the site repository and GitHub Pages asset repositories to stay within GitHub's per-site deployment size limit. The legacy `/jg/g/...` route does not identify the asset repository reliably; check the mapping below before adding or repairing a game route.
+
+### Game asset repositories
+
+| Repository | Contents / use | GitHub Pages path |
+| --- | --- | --- |
+| [`perfectnip.github.io`](https://github.com/perfectnip/perfectnip.github.io) | Main site, game catalog, small game builds, and game images | `https://perfectnip.github.io/` |
+| [`jg`](https://github.com/perfectnip/jg) | Large game files; currently includes `g/magic-tiles-3/` | `https://perfectnip.github.io/jg/` |
+| [`jg2`](https://github.com/perfectnip/jg2) | Game files; includes the working Hollow Knight page at `g/hollow-knight/` | `https://perfectnip.github.io/jg2/` |
+| [`jg3`](https://github.com/perfectnip/jg3) | Game files, including `g/amenda/` and `g/brotato/` | `https://perfectnip.github.io/jg3/` |
+| [`jg4`](https://github.com/perfectnip/jg4), [`jg5`](https://github.com/perfectnip/jg5), [`jg6`](https://github.com/perfectnip/jg6) | Additional split game files | `https://perfectnip.github.io/jg4/`, `/jg5/`, `/jg6/` |
+| [`games-cdn`](https://github.com/perfectnip/games-cdn), [`games-cdn2`](https://github.com/perfectnip/games-cdn2), [`games-cdn3`](https://github.com/perfectnip/games-cdn3) | Migrated game/CDN payloads; verify the owning repo before routing | Repo-specific Pages or CDN URL |
+| [`hollow-knight`](https://github.com/perfectnip/hollow-knight) | Standalone Hollow Knight WebGL source and assets | `https://perfectnip.github.io/hollow-knight/` |
+| [`silksong-data`](https://github.com/perfectnip/silksong-data) | Silksong Unity WebGL payload: build, 100-part WebGL archive, Addressables catalog, and videos. The launch page lives in this repo at `q/g/silksong/` and loads payloads from the raw repo URL. | `https://perfectnip.github.io/q/g/silksong/` |
+| [`gx-launcher`](https://github.com/perfectnip/gx-launcher) | GX Eaglercraft client builds | Use `https://raw.githack.com/perfectnip/gx-launcher/main/...` to render HTML; `raw.githubusercontent.com` displays source text. |
+
+**Known routes:** Hollow Knight is served from `https://perfectnip.github.io/jg2/g/hollow-knight/`; Silksong uses the local Unity launch page at `q/g/silksong/` and fetches the large payload from `silksong-data`.
+
+The Silksong loader downloads 100 archive parts (about 1.9 GB) on first launch, extracts the Addressables files into Cache Storage, then starts the Unity WebGL build. The cache is browser-local; clearing site data means the archive must be downloaded again. Build, archive, and streaming paths are relative to the `silksong-data` repository root.
+
+Before adding a game tile, confirm the matching `index.html` and all relative assets exist in the owning repository, then use that repository's Pages path in the catalog. The local checkout does not contain the contents of the split asset repositories.
 
 ### Loading screens architecture
 
@@ -204,7 +224,7 @@ Pending add games list:
 
 1. Get the source files for the game
 
-2. Go to folder `jg/g/`, create a folder of the game's name to contain all the game files.
+2. Put the game in the appropriate asset repository and folder (see the repository map above). Keep the launcher and relative asset paths together.
 
 3. Go to folder `game-images/games`, upload an image and name the image the same name as the game files folder.
 
