@@ -5019,7 +5019,10 @@ document.addEventListener('click',function(e){
 // DOMContentLoaded fires, so we must read it now.
 var __jqrgForceAnniversary=/[?&]anniversary=/.test(location.search);
 var __anniversaryShown=false;
-var ANNIVERSARY_START=new Date(2026,8,20,0,0,0); // Sep 20, 2026 local time
+var ANNIVERSARY_START=new Date(2026,8,29,0,0,0); // Sep 29, 2026 local time (release day)
+// Dismissal is scoped to the announcement date, so moving the date re-arms the popup
+// once for everyone (people dismissed it during testing, before it was released).
+var ANNIV_DISMISS_KEY='jqrgAnniversaryDismissed:'+ANNIVERSARY_START.getFullYear()+'-'+(ANNIVERSARY_START.getMonth()+1)+'-'+ANNIVERSARY_START.getDate();
 function maybeShowAnniversary(){
   try{
     var forceParam=__jqrgForceAnniversary || /[?&]anniversary=/.test(location.search);
@@ -5028,7 +5031,7 @@ function maybeShowAnniversary(){
       __anniversaryShown=true;
       return;
     }
-    if(localStorage.getItem('jqrgAnniversaryDismissed')==='1') return;
+    if(localStorage.getItem(ANNIV_DISMISS_KEY)==='1') return;
     var now=new Date();
     if(now.getTime()>=ANNIVERSARY_START.getTime()){
       document.getElementById('anniversary-modal').classList.add('open');
@@ -5038,7 +5041,7 @@ function maybeShowAnniversary(){
 }
 function closeAnniversary(){
   document.getElementById('anniversary-modal').classList.remove('open');
-  try{ localStorage.setItem('jqrgAnniversaryDismissed','1'); }catch(e){}
+  try{ localStorage.setItem(ANNIV_DISMISS_KEY,'1'); }catch(e){}
 }
 document.addEventListener('click',function(e){
   var m=document.getElementById('anniversary-modal');
