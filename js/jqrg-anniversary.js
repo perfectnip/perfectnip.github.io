@@ -96,7 +96,7 @@
   // never play over a half-loaded page and miss its beats.
   var LAG_MAX_MS = 14000;
   var PRE_BLACK_MS = 1000;                      // hard blackout before music
-  var TEXT_MS = 9800;                           // "let's see where it all began" is on screen 9.8 s
+  var TEXT_MS = 14700;                          // 1.5x the original 9.8 s text animation
   var MAIN_START_MS = TEXT_MS;                  // archive starts the instant the text is gone (≈ beat 18)
   var PAGE_BEATS = 8;                           // 7 on-screen + blackout beat
   var ARCHIVE_MS = OLD_VERSIONS.length * PAGE_BEATS * BEAT_MS;  // 32 beats
@@ -149,10 +149,8 @@
 
   function currentUsername() {
     try {
-      var raw = localStorage.getItem('__jqrg_auth_v1');
-      if (!raw) return null;
-      var auth = JSON.parse(raw);
-      return (auth && auth.user && auth.user.username) || null;
+      var user = window.JqrgCloud && window.JqrgCloud.getUser && window.JqrgCloud.getUser();
+      return user && user.username || null;
     } catch (_) { return null; }
   }
 
@@ -172,11 +170,8 @@
         var t = window.JqrgCloud.getToken();
         if (t) return t;
       }
-      var raw = localStorage.getItem('__jqrg_auth_v1');
-      if (!raw) return null;
-      var auth = JSON.parse(raw);
-      return (auth && auth.token) || null;
     } catch (_) { return null; }
+    return null;
   }
 
   function getDoneFlag() {
@@ -362,12 +357,16 @@
   }
 
   function requestFs() {
-    if (!root) return Promise.resolve(false);
-    var fn = root.requestFullscreen || root.webkitRequestFullscreen ||
-             root.mozRequestFullScreen || root.msRequestFullscreen;
+    var target = document.documentElement;
+    if (!root || !target) return Promise.resolve(false);
+    // Fullscreen the document so the transparent pre-roll can show and glitch
+    // the actual site underneath it. Fullscreening only the overlay turns the
+    // lag into a black backdrop because the page is outside the fullscreen layer.
+    var fn = target.requestFullscreen || target.webkitRequestFullscreen ||
+             target.mozRequestFullScreen || target.msRequestFullscreen;
     if (!fn) return Promise.resolve(false);
     try {
-      var p = fn.call(root);
+      var p = fn.call(target);
       if (p && typeof p.then === 'function') {
         return p.then(function () { return true; }, function () { return false; });
       }
@@ -1170,10 +1169,12 @@
 
   function renderResult(data) {
     var inner = el('<div class="anniv-inner"></div>');
-    if (data.error === 'auth_required') {
+    var authRequired = data.error === 'auth_required' ||
+      String(data.error || '').toLowerCase() === 'not authenticated' || data.status === 401;
+    if (authRequired) {
       inner.appendChild(stageLabel('LOCKED'));
       inner.appendChild(el('<div class="anniv-title">SIGN IN TO CLAIM</div>'));
-      inner.appendChild(el('<div class="anniv-sub">You need an account to earn an anniversary reward.</div>'));
+      inner.appendChild(el('<div class="anniv-sub">We couldn\u2019t verify your sign-in for this submission. Your answers are still here. Sign in and retry; if the result was already saved, we\u2019ll recover it.</div>'));
     } else if (data.error === 'not_released') {
       inner.appendChild(stageLabel('SOON'));
       inner.appendChild(el('<div class="anniv-title">COMING SOON</div>'));
@@ -1185,7 +1186,7 @@
     } else if (data.error) {
       inner.appendChild(stageLabel('ERROR'));
       inner.appendChild(el('<div class="anniv-title">SOMETHING BROKE</div>'));
-      inner.appendChild(el('<div class="anniv-sub">Please try again later.</div>'));
+      inner.appendChild(el('<div class="anniv-sub">We couldn\u2019t save or retrieve your result just now.</div>'));
     } else {
       var already = data.result === 'already_submitted';
       inner.appendChild(stageLabel('GAME CLEAR'));
@@ -1201,7 +1202,26 @@
     setStage(inner);
     var b = el('<button class="anniv-btn">Exit</button>');
     b.onclick = close;
-    setFoot([b]);
+    if (authRequired) {
+      var retryAuth = el('<button class="anniv-btn ghost">Retry submission</button>');
+      retryAuth.onclick = submitAnswers;
+      var signIn = el('<button class="anniv-btn">Sign in</button>');
+      signIn.onclick = function () {
+        var openAuth = window.openJqrgAuth;
+        if (typeof openAuth === 'function') openAuth({ required: true });
+        else if (window.JqrgAuthUI && typeof window.JqrgAuthUI.openModal === 'function') {
+          window.JqrgAuthUI.openModal({ required: true });
+        }
+      };
+      setFoot([retryAuth, signIn, b]);
+    } else if (data.error && data.error !== 'not_configured' && data.error !== 'not_released') {
+      inner.appendChild(el('<div class="anniv-sub">Your answers are still available on this screen. Retry to submit or recover a result that was already saved.</div>'));
+      var retry = el('<button class="anniv-btn">Retry submission</button>');
+      retry.onclick = submitAnswers;
+      setFoot([retry, b]);
+    } else {
+      setFoot([b]);
+    }
   }
 
   /* ------------------------------------------------------------------ *
@@ -1219,7 +1239,15 @@
       method: 'POST',
       headers: headers,
       body: JSON.stringify({ answers: answers })
-    }).then(function (r) { return r.json().catch(function () { return { error: 'network' }; }); })
+    }).then(function (r) {
+      return r.json().catch(function () { return { error: 'network' }; }).then(function (data) {
+        data = data && typeof data === 'object' ? data : { error: 'network' };
+        if (r.status === 401) data.error = 'auth_required';
+        else if (!r.ok && !data.error) data.error = 'submit_failed';
+        if (!r.ok) data.status = r.status;
+        return data;
+      });
+    })
       .then(renderResult)
       .catch(function () { renderResult({ error: 'network' }); });
   }
