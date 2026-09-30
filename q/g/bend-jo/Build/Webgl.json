@@ -1,0 +1,16 @@
+{
+"companyName": "SquishyTurtleGames",
+"productName": "Bendjo",
+"productVersion": "0.1",
+"dataUrl": "Webgl.data.unityweb",
+"wasmCodeUrl": "Webgl.wasm.code.unityweb",
+"wasmFrameworkUrl": "Webgl.wasm.framework.unityweb",
+"graphicsAPI": ["WebGL 2.0","WebGL 1.0"],
+"webglContextAttributes": {"preserveDrawingBuffer": false},
+"splashScreenStyle": "Dark",
+"backgroundColor": "#07060C",
+"cacheControl": {"default": "must-revalidate"},
+"developmentBuild": false,
+"multithreading": false,
+"unityVersion": "2019.4.40f1"
+}

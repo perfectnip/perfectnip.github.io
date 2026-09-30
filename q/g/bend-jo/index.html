@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#07060c">
+  <meta name="description" content="Play Bend Jo in your browser.">
+  <title>Bend Jo</title>
+  <style>
+    html, body, #unityContainer {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #07060c;
+    }
+    body { position: fixed; inset: 0; }
+    #unityContainer canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+      outline: none;
+    }
+  </style>
+  <script src="Build/UnityLoader.js"></script>
+</head>
+<body>
+  <div id="unityContainer" aria-label="Bend Jo game"></div>
+  <script>
+    UnityLoader.instantiate("unityContainer", "Build/Webgl.json");
+  </script>
+</body>
+</html>
