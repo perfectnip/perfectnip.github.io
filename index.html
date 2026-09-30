@@ -3541,6 +3541,7 @@ body.ui-hidden .top-bar > .tb-actions > *:not(.hide-ui-btn) *::after{
       <hr style="border:1px solid var(--border-light);margin:16px 0">
       <p style="font-weight:500">Latest updates:</p>
       <ul style="margin:8px 0 12px 20px;opacity:.85;line-height:1.7">
+        <li>Celebrate the first anniversary any time: <button type="button" onclick="closeAnnouncement();openAnniversary()" style="border:0;background:none;padding:0;color:var(--accent-purple);text-decoration:underline;cursor:pointer;font:inherit">open the anniversary game</button></li>
         <li>Fixed anniversary quiz submissions: if sign-in is missing or expires, you can sign in and retry without losing your answers</li>
         <li>Added <b>89</b> new games</li>
         <li>Signups can skip email verification for approved school email domains</li>
@@ -5016,11 +5017,12 @@ document.addEventListener('click',function(e){
 // DOMContentLoaded fires, so we must read it now.
 var __jqrgForceAnniversary=/[?&]anniversary=/.test(location.search);
 var __anniversaryShown=false;
-var ANNIVERSARY_START=new Date(2026,8,29,0,0,0); // Sep 29, 2026 local time (release day)
-// Dismissal is scoped to the announcement date, so moving the date re-arms the popup
-// once for everyone (people dismissed it during testing, before it was released).
-var ANNIV_DISMISS_KEY='jqrgAnniversaryDismissed:'+ANNIVERSARY_START.getFullYear()+'-'+(ANNIVERSARY_START.getMonth()+1)+'-'+ANNIVERSARY_START.getDate();
-function maybeShowAnniversary(){
+var __annivDismissKey=null;
+function annivDismissKey(user){
+  var id=user&&(user.id||user.username);
+  return id?'jqrgAnniversaryDismissed:2026:'+String(id):null;
+}
+function maybeShowAnniversary(user){
   try{
     var forceParam=__jqrgForceAnniversary || /[?&]anniversary=/.test(location.search);
     if(forceParam){
@@ -5028,23 +5030,34 @@ function maybeShowAnniversary(){
       __anniversaryShown=true;
       return;
     }
-    if(localStorage.getItem(ANNIV_DISMISS_KEY)==='1') return;
-    var now=new Date();
-    if(now.getTime()>=ANNIVERSARY_START.getTime()){
-      document.getElementById('anniversary-modal').classList.add('open');
-      __anniversaryShown=true;
-    }
+    if(!user) return;
+    __annivDismissKey=annivDismissKey(user);
+    if(__annivDismissKey&&localStorage.getItem(__annivDismissKey)==='1') return;
+    document.getElementById('anniversary-modal').classList.add('open');
+    __anniversaryShown=true;
   }catch(e){}
+}
+function openAnniversary(){
+  var modal=document.getElementById('anniversary-modal');
+  if(modal) modal.classList.add('open');
 }
 function closeAnniversary(){
   document.getElementById('anniversary-modal').classList.remove('open');
-  try{ localStorage.setItem(ANNIV_DISMISS_KEY,'1'); }catch(e){}
+  try{ if(__annivDismissKey) localStorage.setItem(__annivDismissKey,'1'); }catch(e){}
 }
 document.addEventListener('click',function(e){
   var m=document.getElementById('anniversary-modal');
   if(e.target===m) closeAnniversary();
 });
-document.addEventListener('DOMContentLoaded',maybeShowAnniversary);
+document.addEventListener('DOMContentLoaded',function(){
+  try{
+    var cloud=window.JqrgCloud;
+    if(cloud&&typeof cloud.onAuthChange==='function'){
+      cloud.onAuthChange(function(user){ maybeShowAnniversary(user); });
+      maybeShowAnniversary(cloud.getUser&&cloud.getUser());
+    }else if(__jqrgForceAnniversary){ maybeShowAnniversary(null); }
+  }catch(e){}
+});
 (function(){
   var setting=localStorage.getItem('autoAnnouncement')||'always';
   if(setting==='always'){
