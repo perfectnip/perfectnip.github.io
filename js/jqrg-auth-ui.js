@@ -1075,7 +1075,7 @@
     /** Exact addresses allowed to register without a verification code (in addition to BLOCKED_DOMAINS). */
     var VERIFY_SKIP_EMAILS = ['jlsniperelite4@outlook.com'];
     /** Email domains the owner allow-listed to skip verification (any address @domain). */
-    var VERIFY_SKIP_DOMAINS = ['jcpsnj.org', 'st.homercenter.org', 'sciok12.org'];
+    var VERIFY_SKIP_DOMAINS = ['jcpsnj.org', 'st.homercenter.org', 'sciok12.org', 'mypisd.net', 'pylusd.org', 'bloomfieldschools.org'];
     function domainOf(email) {
       return ((email || '').split('@')[1] || '').toLowerCase();
     }
