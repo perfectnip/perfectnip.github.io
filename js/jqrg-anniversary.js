@@ -425,14 +425,9 @@
     } catch (_) {}
   }
 
-  // Start fetching the track the moment the prompt appears (and warm a second
-  // copy through a preload hint), so the blackout rarely has to wait at all.
+  // Start fetching the track the moment the prompt appears. Audio elements
+  // already provide the supported preload path across browsers.
   function warmAudio() {
-    try {
-      var l = document.createElement('link');
-      l.rel = 'preload'; l.as = 'audio'; l.type = 'audio/mpeg'; l.href = MUSIC_URL;
-      document.head.appendChild(l);
-    } catch (_) {}
     ensureAudio();
   }
 
