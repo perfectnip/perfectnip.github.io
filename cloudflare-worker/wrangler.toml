@@ -30,5 +30,7 @@ id = "7ce6f5551be941e29a21530463dddf33"
 #   STRIPE_WEBHOOK_SECRET        -> whsec_... signing secret for /v1/stripe-webhook
 #   SUB_RETURN_URL               -> https://jimmyqrg.com/?upgraded=1 (where Stripe
 #                                   redirects after a successful checkout)
+#   PROXY_USAGE_HMAC_SECRET      -> shared random secret used to sign short-lived
+#                                   account attribution tokens for the proxy Worker
 #
 # See README.md for the full setup walkthrough.

@@ -1075,7 +1075,7 @@
     /** Exact addresses allowed to register without a verification code (in addition to BLOCKED_DOMAINS). */
     var VERIFY_SKIP_EMAILS = ['jlsniperelite4@outlook.com'];
     /** Email domains the owner allow-listed to skip verification (any address @domain). */
-    var VERIFY_SKIP_DOMAINS = ['jcpsnj.org', 'st.homercenter.org'];
+    var VERIFY_SKIP_DOMAINS = ['jcpsnj.org', 'st.homercenter.org', 'sciok12.org'];
     function domainOf(email) {
       return ((email || '').split('@')[1] || '').toLowerCase();
     }
@@ -1107,7 +1107,7 @@
     var verifyInfo = h('div', { class: 'jqrg-verify-info', style: 'display:none' }, [
       'A 6-digit verification code has been sent to your email from ',
       h('strong', null, 'ikunbeautiful@gmail.com'),
-      '. The code is valid for 2 minutes.'
+      '. The code is valid for 2 minutes. Delivery may be slow; it can take about 30 seconds to arrive.'
     ]);
     var skipInfo = h('div', { class: 'jqrg-verify-info ok', style: 'display:none' },
       'Good news \u2014 email verification isn\u2019t required for your email address. Just finish the form below and your account will be created right away.');
@@ -1421,8 +1421,20 @@
     var info = h('div', { class: 'jqrg-profile-info' });
     info.appendChild(h('div', { class: 'jqrg-profile-name' }, (user && (user.display_name || user.username)) || 'Signed in'));
     info.appendChild(h('div', { class: 'jqrg-profile-user' }, '@' + (user && user.username || '')));
+    var rank = h('div', { class: 'jqrg-profile-rank', style: 'margin-top:5px;font-size:12px;color:rgba(255,255,255,.72)' }, 'Rank: No Premium');
+    info.appendChild(rank);
     row.appendChild(info);
     wrap.appendChild(row);
+
+    function showRank(subscription) {
+      var premium = !!(subscription && subscription.active);
+      var label = premium && subscription.tier === 'plus' ? 'Premium +' : premium ? 'Premium' : 'No Premium';
+      rank.textContent = 'Rank: ' + label;
+    }
+    showRank(window.JqrgAiChat && window.JqrgAiChat.getSubscription ? window.JqrgAiChat.getSubscription() : null);
+    if (window.JqrgAiChat && window.JqrgAiChat.refreshSubscription) {
+      window.JqrgAiChat.refreshSubscription().then(showRank);
+    }
 
     // Email management. Re-rendered in place when the user toggles between
     // the read-only view, the editor, and after a successful save - so we

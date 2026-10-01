@@ -13,10 +13,8 @@
  *   - restoreIdb(names?)   – restore IndexedDB snapshots from the server before the game starts
  *   - autoSyncIdb(names?)  – automatically snapshot on visibility-hidden and beforeunload
  *
- * localStorage is intercepted by wrapping the global Storage prototype. Writes are batched and
- * sent to /api/saves; reads are unaffected. On sign-in the script bulk-uploads everything that
- * exists locally (one-time migration) and then bulk-downloads the server snapshot, preferring
- * the newer side per key (last-writer-wins by timestamp).
+ * Private save values are exposed through a memory-only Storage facade and sent to /api/saves.
+ * They are never written to localStorage or IndexedDB. The account service is the source of truth.
  */
 (function () {
   'use strict';
@@ -50,9 +48,9 @@
     return 'jimmyqrg';
   })();
   var AUTH_KEY = '__jqrg_auth_v1';
-  var LAST_SYNC_KEY = '__jqrg_cloud_last_sync';
-  var MIGRATION_KEY = '__jqrg_cloud_migrated_v1';
   var PENDING_KEY = '__jqrg_cloud_pending_v1';
+  var LAST_SYNC_KEY = '__jqrg_cloud_last_sync_v1';
+  var MIGRATION_KEY = '__jqrg_cloud_migration_v1';
 
   var BANNED_EMAILS = ['weeee@outlook.com'];
   function _isBannedEmail(email) {
@@ -113,6 +111,7 @@
     'user', // legacy authorized/normal flag for the access-code modal
     'autoClickerSettings',
     'favoriteGames', // favorites are stored per-device; no game progress here
+    'jqrg_ai_model_v1', 'jqrg_ai_autoroute_v1', '__jqrg_ai_img_info_v1',
   ]);
   var userSkipPrefixes = [];
 
@@ -131,6 +130,7 @@
     return fetch(SERVER + path, {
       method: opts.method || 'GET',
       credentials: 'include',
+      cache: 'no-store',
       mode: 'cors',
       headers: headers,
       body: opts.body,
@@ -160,6 +160,8 @@
   var _origSetItem = _storageProto ? _storageProto.setItem : null;
   var _origGetItem = _storageProto ? _storageProto.getItem : null;
   var _origRemoveItem = _storageProto ? _storageProto.removeItem : null;
+  var _origKey = _storageProto ? _storageProto.key : null;
+  var _origLength = _storageProto ? Object.getOwnPropertyDescriptor(_storageProto, 'length') : null;
 
   function readJSON(key, fallback) {
     if (!LS) return fallback;
@@ -170,23 +172,30 @@
     } catch (_) { return fallback; }
   }
   function writeJSON(key, value) {
-    if (!LS || !_origSetItem) return;
-    try { _origSetItem.call(LS, key, JSON.stringify(value)); } catch (_) {}
+    // Cloud queues and cursors are intentionally volatile too.
   }
   function removeKey(key) {
     if (!LS || !_origRemoveItem) return;
     try { _origRemoveItem.call(LS, key); } catch (_) {}
   }
 
-  var authState = readJSON(AUTH_KEY, null);
-  if (authState && typeof authState === 'object' && authState.token && authState.user) {
-    if (_isBannedEmail(authState.user.email)) {
-      document.addEventListener('DOMContentLoaded', _showBanScreen);
-      if (document.readyState !== 'loading') _showBanScreen();
-    }
-  } else {
-    authState = null;
+  // Never persist bearer credentials or cached account details in web storage:
+  // any same-origin script can read localStorage. Recover sessions from the
+  // server's secure cookie and keep the short-lived bearer token in memory only.
+  removeKey(AUTH_KEY);
+  // Purge legacy game/chat data and sync metadata written by earlier versions.
+  // Keep only explicitly classified site preferences in localStorage.
+  if (LS && _origKey && _origRemoveItem) {
+    try {
+      var legacyKeys = [];
+      for (var li = 0; li < (_origLength && _origLength.get ? _origLength.get.call(LS) : LS.length); li++) {
+        var legacyKey = _origKey.call(LS, li);
+        if (legacyKey && (isVolatileKey(legacyKey) || legacyKey === AUTH_KEY)) legacyKeys.push(legacyKey);
+      }
+      legacyKeys.forEach(function (legacyKey) { _origRemoveItem.call(LS, legacyKey); });
+    } catch (_) {}
   }
+  var authState = null;
 
   var authChangeHandlers = [];
   function fireAuthChange() {
@@ -197,12 +206,15 @@
 
   function setAuth(user, token) {
     authState = { user: user, token: token, savedAt: Date.now() };
-    writeJSON(AUTH_KEY, authState);
+    if (_isBannedEmail(user && user.email)) _showBanScreen();
     fireAuthChange();
   }
   function clearAuth() {
     authState = null;
     removeKey(AUTH_KEY);
+    volatileValues = Object.create(null);
+    pendingQueue = Object.create(null);
+    lastSyncAt = 0;
     fireAuthChange();
   }
 
@@ -218,14 +230,26 @@
     return true;
   }
 
-  var pendingQueue = readJSON(PENDING_KEY, {}) || {};
+  // Only an explicit allowlist of non-sensitive interface preferences may be
+  // persisted. Game saves, chats, account state, rate-limit state, and unknown
+  // application keys stay in this page's memory and are discarded on close.
+  function isVolatileKey(key) {
+    return shouldSyncKey(key) || key === '__jqrg_ai_device_v1' || key === '__jqrg_ai_rate_v1' ||
+      key === AUTH_KEY || (typeof key === 'string' && key.indexOf('__jqrg_cloud_') === 0);
+  }
+
+  // Save/chat values live only in memory while a page is open. The cloud account
+  // is their sole persistent store; never restore or enqueue old local copies.
+  var volatileValues = Object.create(null);
+  var pendingQueue = Object.create(null);
   var debounceTimer = null;
   var flushInFlight = false;
   // In-memory mirror of KEY_TIMES_KEY, persisted lazily so we don't pay a
   // synchronous JSON.stringify on every game-tick localStorage write.
-  var keyTimes = readJSON(KEY_TIMES_KEY, {}) || {};
+  var keyTimes = Object.create(null);
   var keyTimesDirty = false;
   var keyTimesFlushTimer = null;
+  var lastSyncAt = 0;
   function markKeyTime(key, time) {
     var t = time || Date.now();
     if (keyTimes[key] === t) return;
@@ -235,7 +259,6 @@
     keyTimesFlushTimer = setTimeout(function () {
       keyTimesFlushTimer = null;
       if (!keyTimesDirty) return;
-      writeJSON(KEY_TIMES_KEY, keyTimes);
       keyTimesDirty = false;
     }, 1500);
   }
@@ -247,7 +270,6 @@
     keyTimesFlushTimer = setTimeout(function () {
       keyTimesFlushTimer = null;
       if (!keyTimesDirty) return;
-      writeJSON(KEY_TIMES_KEY, keyTimes);
       keyTimesDirty = false;
     }, 1500);
   }
@@ -257,7 +279,6 @@
     if (!shouldSyncKey(key)) return;
     var now = Date.now();
     pendingQueue[key] = { value: value, time: now, deleted: value === null };
-    writeJSON(PENDING_KEY, pendingQueue);
     if (value === null) clearKeyTime(key);
     else markKeyTime(key, now);
     scheduleFlush();
@@ -311,8 +332,7 @@
     }
     chain.then(function () {
       pendingQueue = {};
-      writeJSON(PENDING_KEY, pendingQueue);
-      writeJSON(LAST_SYNC_KEY, { at: Date.now() });
+      lastSyncAt = Date.now();
     }).catch(function (err) {
       // On failure leave pending in place; we'll retry next tick.
       if (err && err.status === 401) { /* not logged in */ }
@@ -330,24 +350,44 @@
     var origSet = _origSetItem;
     var origRemove = _origRemoveItem;
     var origClear = _storageProto.clear;
+    _storageProto.getItem = function (k) {
+      if (this === LS && isVolatileKey(String(k))) return Object.prototype.hasOwnProperty.call(volatileValues, String(k)) ? volatileValues[String(k)] : null;
+      return _origGetItem.apply(this, arguments);
+    };
+    if (_origKey) _storageProto.key = function (index) {
+      if (this !== LS) return _origKey.apply(this, arguments);
+      var persisted = [];
+      try { for (var i = 0; i < _origLength.get.call(LS); i++) { var key = _origKey.call(LS, i); if (key && !isVolatileKey(key)) persisted.push(key); } } catch (_) {}
+      return persisted.concat(Object.keys(volatileValues))[Number(index)] || null;
+    };
+    try {
+      var lengthDescriptor = _origLength;
+      if (lengthDescriptor && lengthDescriptor.get && lengthDescriptor.configurable) {
+        Object.defineProperty(_storageProto, 'length', { configurable: true, get: function () {
+          if (this !== LS) return lengthDescriptor.get.call(this);
+          var count = 0;
+          try { for (var i = 0; i < lengthDescriptor.get.call(LS); i++) if (!isVolatileKey(_origKey.call(LS, i))) count++; } catch (_) {}
+          return count + Object.keys(volatileValues).length;
+        } });
+      }
+    } catch (_) {}
     _storageProto.setItem = function (k, v) {
-      var ret = origSet.apply(this, arguments);
-      try { if (this === LS) enqueue(String(k), v == null ? '' : String(v)); } catch (_) {}
-      return ret;
+      if (this === LS && isVolatileKey(String(k))) {
+        k = String(k); v = String(v); volatileValues[k] = v; if (shouldSyncKey(k)) enqueue(k, v); return;
+      }
+      return origSet.apply(this, arguments);
     };
     _storageProto.removeItem = function (k) {
-      var ret = origRemove.apply(this, arguments);
-      try { if (this === LS) enqueue(String(k), null); } catch (_) {}
-      return ret;
+      if (this === LS && isVolatileKey(String(k))) { k = String(k); delete volatileValues[k]; if (shouldSyncKey(k)) enqueue(k, null); return; }
+      return origRemove.apply(this, arguments);
     };
     _storageProto.clear = function () {
+      if (this !== LS) return origClear.apply(this, arguments);
+      Object.keys(volatileValues).forEach(function (k) { delete volatileValues[k]; if (shouldSyncKey(k)) enqueue(k, null); });
       var keys = [];
-      try { for (var i = 0; i < LS.length; i++) keys.push(LS.key(i)); } catch (_) {}
-      var ret = origClear.apply(this, arguments);
-      try {
-        if (this === LS) for (var j = 0; j < keys.length; j++) if (keys[j]) enqueue(keys[j], null);
-      } catch (_) {}
-      return ret;
+      try { for (var i = 0; i < _origLength.get.call(LS); i++) { var key = _origKey.call(LS, i); if (key && isVolatileKey(key)) keys.push(key); } } catch (_) {}
+      keys.forEach(function (k) { origRemove.call(LS, k); });
+      return;
     };
   }
 
@@ -558,13 +598,11 @@
         // Never restore a key that has a pending local delete or a newer local write.
         var pend = pendingQueue[it.key];
         if (pend && pend.time >= (it.updated_at || 0)) continue;
-        try {
-          // Write bypassing our interceptor so we don't echo back to the server.
-          if (origSet) origSet.call(LS, it.key, it.value == null ? '' : String(it.value));
-          else LS.setItem(it.key, it.value == null ? '' : String(it.value));
-        } catch (_) {}
+        // Restore into the per-page memory facade. Do not persist account saves
+        // or chat history to browser storage, even temporarily.
+        volatileValues[it.key] = it.value == null ? '' : String(it.value);
       }
-      writeJSON(LAST_SYNC_KEY, { at: data.server_time || Date.now() });
+      lastSyncAt = data.server_time || Date.now();
       return data;
     });
   }
@@ -574,8 +612,7 @@
     if (periodicTimer) return;
     periodicTimer = setInterval(function () {
       if (!authState) return;
-      var last = readJSON(LAST_SYNC_KEY, null);
-      var since = (last && last.at) ? last.at - 1000 : 0;
+      var since = lastSyncAt ? lastSyncAt - 1000 : 0;
       // Flush first so our changes go up before we pull theirs.
       flushPending();
       pullFromServer(since).catch(function () {});
@@ -600,7 +637,6 @@
       }
       // Refresh cached user info in case display_name/avatar changed.
       authState.user = data.user;
-      writeJSON(AUTH_KEY, authState);
       return data.user;
     });
   }
@@ -743,15 +779,14 @@
     var req = request('/api/auth/logout', { method: 'POST' }).catch(function () {});
     stopPeriodicSync();
     clearAuth();
-    pendingQueue = {};
+    pendingQueue = Object.create(null);
     writeJSON(PENDING_KEY, pendingQueue);
     return req.then(function () { return had; });
   }
 
   function forceSync() {
     if (!authState) return Promise.resolve(null);
-    var last = readJSON(LAST_SYNC_KEY, null);
-    var since = (last && last.at) ? last.at - 1000 : 0;
+    var since = lastSyncAt ? lastSyncAt - 1000 : 0;
     flushPending();
     return pullFromServer(since);
   }
@@ -848,7 +883,7 @@
     return chain.then(function () {
       // Mirror localStorage kind items into the live localStorage so the user sees them immediately.
       try {
-        items.forEach(function (it) { if (it.kind === 'localStorage' && _origSetItem) _origSetItem.call(LS, it.key, it.value); });
+        items.forEach(function (it) { if (it.kind === 'localStorage') volatileValues[it.key] = String(it.value); });
       } catch (_) {}
       return { accepted: accepted, rejected: rejected, total: total };
     });
@@ -875,9 +910,9 @@
           keys.forEach(function (k) { if (shouldSyncKey(k) && _origRemoveItem) _origRemoveItem.call(LS, k); });
         }
       } catch (_) {}
-      pendingQueue = {};
-      writeJSON(PENDING_KEY, pendingQueue);
-      writeJSON(LAST_SYNC_KEY, { at: Date.now() });
+      pendingQueue = Object.create(null);
+      volatileValues = Object.create(null);
+      lastSyncAt = Date.now();
       return { ok: true };
     });
   }
@@ -917,7 +952,7 @@
 
     // Reset the per-key write-time map and the pending-flush queue so a sync we
     // start later doesn't replay phantom writes for keys we just removed.
-    pendingQueue = {};
+    pendingQueue = Object.create(null);
     try { writeJSON(PENDING_KEY, pendingQueue); } catch (_) {}
     try { writeJSON(KEY_TIMES_KEY, keyTimes); keyTimesDirty = false; } catch (_) {}
 
@@ -939,13 +974,11 @@
 
     // IndexedDB cleanup runs after LS so the sync state is already coherent if any
     // engine code hooks the deleteDatabase events and tries to read state on unload.
+    volatileValues = Object.create(null);
     return listIdbDatabases().then(function (names) {
-      var meaningful = (names || []).filter(function (n) {
-        if (!n) return false;
-        if (isEngineCacheName(n)) return false;
-        if (!isVirtualFsName(n)) return true;
-        return isRegisteredGameSave(n);
-      });
+      // Existing game databases may contain local saves or chat data; remove
+      // every database from this origin as part of the user's no-local-storage choice.
+      var meaningful = names || [];
       if (!meaningful.length) {
         return { ok: true, localStorage: lsCleared, indexedDB: 0 };
       }
@@ -1289,7 +1322,8 @@
   }
 
   function snapshotIdb(names) {
-    if (!authState) return Promise.reject(new Error('Not signed in'));
+    return Promise.resolve([]);
+    /* if (!authState) return Promise.reject(new Error('Not signed in'));
     return resolveIdbNames(names).then(function (list) {
       if (!list.length) return [];
       var results = [];
@@ -1311,11 +1345,12 @@
           }).catch(function (err) { return { name: name, error: err && err.message || String(err) }; });
         }).then(function (r) { results.push(r); return results; });
       }, Promise.resolve()).then(function () { return results; });
-    });
+    }); */
   }
 
   function restoreIdb(names) {
-    if (!authState) return Promise.reject(new Error('Not signed in'));
+    return Promise.resolve([]);
+    /* if (!authState) return Promise.reject(new Error('Not signed in'));
     return resolveIdbNames(names).then(function (list) {
       // If nothing specified we try to restore whatever the server has for this user.
       var fetchServer = list.length
@@ -1345,7 +1380,7 @@
           });
         }, Promise.resolve()).then(function () { return results; });
       });
-    });
+    }); */
   }
 
   /** Detect entries that match the legacy "snapshot then restore" corruption
@@ -1541,7 +1576,10 @@
    *  GameMaker HTML5, Eaglercraft (1.5.2, 1.8.x, 1.12.x). Falls back to a timed
    *  trigger on any /q/g/, /jg/g/, /q/e/ or /jg/e/ path. */
   function autoWireCommonEngines() {
+    // Games run in opaque-origin sandboxes; never snapshot or restore browser databases.
     if (window.__jqrg_idb_auto_wired) return;
+    window.__jqrg_idb_auto_wired = true;
+    return;
     try {
       var disableMeta = document.querySelector && document.querySelector('meta[name="jqrg-cloud-disable-idb-autowire"]');
       if (disableMeta && disableMeta.content) {
@@ -1711,7 +1749,6 @@
         if (data && data.user && authState) {
           // Merge so we keep token & savedAt; only the user record changes.
           authState.user = data.user;
-          writeJSON(AUTH_KEY, authState);
           fireAuthChange();
         }
         return data && data.user;
@@ -1724,13 +1761,17 @@
   try { installInterceptor(); } catch (e) { console.warn('[jqrg-cloud] interceptor failed', e); }
   try { installStorageListener(); } catch (e) { console.warn('[jqrg-cloud] storage listener failed', e); }
   try { autoWireCommonEngines(); } catch (e) { console.warn('[jqrg-cloud] engine auto-wire failed', e); }
-  if (authState) {
-    bootstrapToken().then(function () {
-      flushPending();
-      forceSync().catch(function () {});
-      startPeriodicSync();
-    }).catch(function () {});
-  }
+  // Remove legacy saves and chat records already present in local storage / IDB.
+  // The localStorage purge also runs synchronously above; IDB deletion is async.
+  try { wipeLocalSyncable(); } catch (_) {}
+  // Rehydrate from the server session cookie on each page load. A bearer token
+  // is issued into memory only after the cookie session has been verified.
+  bootstrapToken().then(function (user) {
+    if (!user) return;
+    flushPending();
+    forceSync().catch(function () {});
+    startPeriodicSync();
+  }).catch(function () {});
 
   // If the page was loaded via an SSO hand-off (?sso=TOKEN), pick it up, stash it, and clean the URL.
   try {

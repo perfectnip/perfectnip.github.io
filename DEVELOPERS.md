@@ -2,7 +2,7 @@
 
 ## Cloud Saves & Sign-in (`js/jqrg-cloud.js` + `js/jqrg-auth-ui.js`)
 
-All same-origin pages on `perfectnip.github.io` are auth-gated and sync game progress to the chat backend (`discord.jimmyqrg.com`). Each HTML file pulls in two scripts via the shared inject marker:
+Same-origin pages use the chat backend (`discord.jimmyqrg.com`) for account sign-in and supported cloud saves. Each HTML file pulls in two scripts via the shared inject marker:
 
 ```html
 <!-- JQRG_CLOUD_INJECT_BEGIN -->
@@ -12,14 +12,15 @@ All same-origin pages on `perfectnip.github.io` are auth-gated and sync game pro
 ```
 
 ### How it works
-- `jqrg-cloud.js` hijacks `localStorage` and syncs every write to the server, debounced. It also snapshots IndexedDB for Unity WebGL / Construct games (`snapshotIdb` / `restoreIdb` / `autoSyncIdb`), auto-detecting those engines.
-- On first login, any existing local data is bulk-uploaded to the server, then the merged set is pulled back — last-writer-wins per key. Accounts that have no server data keep their local progress (nothing is lost).
+- `jqrg-cloud.js` exposes supported game saves and chat records through a memory-only `localStorage` facade and sends changes to the server with non-cacheable requests. These values, account tokens, sync queues, and chat device/rate state are not persisted in localStorage or IndexedDB. Legacy save/chat keys and prior game databases are deleted during startup cleanup.
+- Cloud saves are the only persistent copy of supported saves and chats. The browser holds them in memory only while the page is open; if the user is signed out or sync is unavailable, unsynced changes are lost on reload or close.
+- Automatic and manual IndexedDB snapshot/restore helpers are disabled. Same-origin game frames use an opaque sandbox; third-party game origins may still apply their own storage policies.
 - `jqrg-auth-ui.js` adds the account button to the top bar and drives the sign-in / sign-up / account modal.
 - The account modal now exposes:
   - **Sync now** – flushes pending writes and pulls the latest server data.
   - **Export data** – downloads a JSON snapshot of every save (localStorage + idb).
   - **Import data** – uploads a previously exported (or equivalent) JSON file.
-  - **Delete all data** – confirm dialog that requires typing `DELETE` before wiping both server saves and local storage (the account itself is kept).
+  - **Delete all data** – confirm dialog that requires typing `DELETE` before wiping server saves and clearing in-memory save data (the account itself is kept).
   - **Sign out** – revokes the current token.
 - Pages `/403.html`, `/404.html`, `/404-safe.html`, `/404-building.html` are skipped by the gate. Anything else blocks the user with a non-dismissible modal until they sign in or sign up.
 
@@ -34,7 +35,7 @@ JqrgCloud.forceSync()                  // flush pending writes + pull latest
 JqrgCloud.exportAll()                  // -> { format, items: [...] }
 JqrgCloud.importAll(data)              // data = { items: [...] } or plain {key:value}
 JqrgCloud.deleteAll()                  // wipes server saves + synced local keys
-JqrgCloud.snapshotIdb() / restoreIdb() // manual IndexedDB sync for Unity etc.
+JqrgCloud.snapshotIdb() / restoreIdb() // disabled; save data is not persisted in browser IndexedDB
 JqrgCloud.skipKey('prefix_') / skipKeys(['a_','b_']) // opt keys out of sync
 ```
 
@@ -93,13 +94,14 @@ Game files are split across the site repository and GitHub Pages asset repositor
 | [`games-cdn`](https://github.com/perfectnip/games-cdn), [`games-cdn2`](https://github.com/perfectnip/games-cdn2), [`games-cdn3`](https://github.com/perfectnip/games-cdn3) | Migrated game/CDN payloads; verify the owning repo before routing | Repo-specific Pages or CDN URL |
 | [`hollow-knight`](https://github.com/perfectnip/hollow-knight) | Standalone Hollow Knight WebGL source and assets | `https://perfectnip.github.io/hollow-knight/` |
 | [`silksong-data`](https://github.com/perfectnip/silksong-data) | Silksong Unity WebGL payload: build, 100-part WebGL archive, Addressables catalog, and videos. The launch page lives in this repo at `q/g/silksong/` and loads payloads from the raw repo URL. | `https://perfectnip.github.io/q/g/silksong/` |
+| [`bend-io`](https://github.com/perfectnip/bend-io) | Partial Bend Jo Unity WebGL build imported into this repository at `q/g/bend-jo/` (launcher, loader, data, and WASM files). The repo's original page title was stale; use the product metadata (`Bendjo`) to identify the build. | `https://perfectnip.github.io/q/g/bend-jo/` |
 | [`gx-launcher`](https://github.com/perfectnip/gx-launcher) | GX Eaglercraft client builds | Use `https://raw.githack.com/perfectnip/gx-launcher/main/...` to render HTML; `raw.githubusercontent.com` displays source text. |
 
 **Known routes:** Hollow Knight is served from `https://perfectnip.github.io/jg2/g/hollow-knight/`; Silksong uses the local Unity launch page at `q/g/silksong/` and fetches the large payload from `silksong-data`.
 
 The Silksong loader downloads 100 archive parts (about 1.9 GB) on first launch, extracts the Addressables files into Cache Storage, then starts the Unity WebGL build. The cache is browser-local; clearing site data means the archive must be downloaded again. Build, archive, and streaming paths are relative to the `silksong-data` repository root.
 
-Before adding a game tile, confirm the matching `index.html` and all relative assets exist in the owning repository, then use that repository's Pages path in the catalog. The local checkout does not contain the contents of the split asset repositories.
+Before adding a game tile, confirm the matching `index.html` and all relative assets exist in the owning repository, then use that repository's Pages path in the catalog. Some asset repositories are imported into the main site when their size allows; Bend Jo is now local under `q/g/bend-jo/`.
 
 ### Loading screens architecture
 

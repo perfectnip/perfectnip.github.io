@@ -4,28 +4,17 @@
   if (window.__JqrgContentGateLoaded) return;
   window.__JqrgContentGateLoaded = true;
 
-  var AUTH_KEY = '__jqrg_auth_v1';
-
-  function isAuthedLS() {
-    try {
-      var raw = localStorage.getItem(AUTH_KEY);
-      if (!raw) return false;
-      var d = JSON.parse(raw);
-      return !!(d && d.user && d.token);
-    } catch (e) { return false; }
-  }
-
   function isAuthed() {
     if (window.JqrgCloud && typeof window.JqrgCloud.isLoggedIn === 'function') {
       try { return !!window.JqrgCloud.isLoggedIn(); } catch (e) {}
     }
-    return isAuthedLS();
+    return false;
   }
 
   window.__jqrgIsAuthed = isAuthed;
 
   if (document.documentElement) {
-    document.documentElement.setAttribute('data-authed', isAuthedLS() ? '1' : '0');
+    document.documentElement.setAttribute('data-authed', isAuthed() ? '1' : '0');
   }
 
   function injectAuthRequired() {

@@ -1038,6 +1038,29 @@ function generateSessionId() {
   return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 }
 
+function encodeBase64Url(bytes) {
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+async function createProxyUsageToken(userId, env) {
+  const secret = env.PROXY_USAGE_HMAC_SECRET;
+  if (!secret) return null;
+
+  const payload = encodeBase64Url(new TextEncoder().encode(JSON.stringify({
+    uid: String(userId),
+    aud: 'jqrg-proxy-usage',
+    exp: Math.floor(Date.now() / 1000) + 30 * 60,
+  })));
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
+  return `${payload}.${encodeBase64Url(new Uint8Array(signature))}`;
+}
+
 async function handleProxySessionCreate(request, env, origin) {
   if (origin && !isAllowedOrigin(origin)) {
     return jsonResponse({ error: 'Forbidden origin' }, 403, origin);
@@ -1075,7 +1098,12 @@ async function handleProxySessionCreate(request, env, origin) {
     );
   }
 
-  return jsonResponse({ session_id: sid, expires_in: PROXY_SESSION_TTL }, 200, origin);
+  const attributionToken = await createProxyUsageToken(user.id, env);
+  return jsonResponse({
+    session_id: sid,
+    attribution_token: attributionToken,
+    expires_in: PROXY_SESSION_TTL,
+  }, 200, origin);
 }
 
 async function handleProxySessionVerify(request, env, origin, sessionId) {

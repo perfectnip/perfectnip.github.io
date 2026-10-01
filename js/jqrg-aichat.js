@@ -91,10 +91,8 @@
 
   function isAdmin() {
     try {
-      var raw = localStorage.getItem('__jqrg_auth_v1');
-      if (!raw) return false;
-      var auth = JSON.parse(raw);
-      var u = auth && auth.user && (auth.user.username || '');
+      var user = window.JqrgCloud && window.JqrgCloud.getUser && window.JqrgCloud.getUser();
+      var u = user && user.username || '';
       return ADMIN_USERNAMES.indexOf(u.toLowerCase()) !== -1;
     } catch (_) { return false; }
   }
@@ -105,11 +103,8 @@
         var t = window.JqrgCloud.getToken();
         if (t) return t;
       }
-      var raw = localStorage.getItem('__jqrg_auth_v1');
-      if (!raw) return null;
-      var auth = JSON.parse(raw);
-      return (auth && auth.token) || null;
     } catch (_) { return null; }
+    return null;
   }
 
   /* ── Cloudflare Turnstile (invisible CAPTCHA) ──
@@ -2858,10 +2853,8 @@
 
   function getUserAvatar() {
     try {
-      var raw = localStorage.getItem('__jqrg_auth_v1');
-      if (!raw) return null;
-      var auth = JSON.parse(raw);
-      var url = auth && auth.user && auth.user.avatar_url;
+      var user = window.JqrgCloud && window.JqrgCloud.getUser && window.JqrgCloud.getUser();
+      var url = user && user.avatar_url;
       if (!url || !String(url).trim()) return null;
       url = String(url).trim();
       if (/^(https?:|data:)/i.test(url)) return url;

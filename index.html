@@ -58,10 +58,10 @@
 <script src="/js/jqrg-gate.js?v=9"></script>
 <script src="/js/mainPageCloak.js?v=71"></script>
 <script src="/js/panicKey.js?v=71"></script>
-<script src="/js/jqrg-cloud.js?v=73"></script>
+<script src="/js/jqrg-cloud.js?v=74"></script>
 <script src="/js/jqrg-auth-ui.js?v=79" defer></script>
 <script src="/js/educational-context.js?v=74"></script>
-<script src="/js/jqrg-content-gate.js?v=2"></script>
+<script src="/js/jqrg-content-gate.js?v=3"></script>
 <!-- Set this to your deployed Cloudflare Worker URL (see cloudflare-worker/README.md) -->
 <meta name="jqrg-aichat-worker" content="https://deepseek-proxy.ikunbeautiful.workers.dev">
 <!-- Cloudflare Turnstile site key. Replace 1x00000000000000000000AA with the
@@ -72,7 +72,7 @@
 <meta name="jqrg-recaptcha-sitekey" content="6Lfl2tcsAAAAABXe-cjpd6yUpitcNOzSQYLC_Zvr">
 <script src="https://www.google.com/recaptcha/api.js?render=6Lfl2tcsAAAAABXe-cjpd6yUpitcNOzSQYLC_Zvr" async defer></script>
 <link rel="stylesheet" href="/css/aichat.css?v=98">
-<script src="/js/jqrg-aichat.js?v=111" defer></script>
+<script src="/js/jqrg-aichat.js?v=112" defer></script>
 <style>
 html.gate-pass #learn-cover{display:none !important}
 html:not(.gate-pass) #app,
@@ -3576,7 +3576,7 @@ body.ui-hidden .top-bar > .tb-actions > *:not(.hide-ui-btn) *::after{
 function _iA(){
   if(window.__jqrgIsAuthed){try{return !!window.__jqrgIsAuthed()}catch(e){}}
   if(window.JqrgCloud&&window.JqrgCloud.isLoggedIn){try{return !!window.JqrgCloud.isLoggedIn()}catch(e){}}
-  try{var raw=localStorage.getItem('__jqrg_auth_v1');if(!raw)return false;var d=JSON.parse(raw);return !!(d&&d.user&&d.token);}catch(e){return false}
+  return false;
 }
 function _openAuth(){
   try{if(window.openJqrgAuth){window.openJqrgAuth({required:false});return}}catch(e){}
@@ -3585,18 +3585,22 @@ function _openAuth(){
 var PROXY_BASE='https://ulw-app.fly.dev/launcher.html?raw=true&adblock=true&url=';
 var PROXY_ORIGIN='https://ulw-app.fly.dev';
 var PROXY_WORKER='https://deepseek-proxy.ikunbeautiful.workers.dev';
+var PROXY_USAGE_WORKER='https://proxy.ikunbeautiful.workers.dev';
+function _openCatalogGame(url){
+  if(typeof openGame==='function') return openGame(url,'games');
+  if(typeof _lP==='function') return _lP(url,'games');
+}
 function proxyUrl(url,raw){
   var proxiedUrl=url.replace('jimmyqrg.github.io','perfectnip.github.io');
   return PROXY_BASE+encodeURIComponent(proxiedUrl);
 }
-function proxyUrlWithSession(sid,url,raw){
+function proxyUrlWithSession(attributionToken,url,raw){
   var proxiedUrl=url.replace('jimmyqrg.github.io','perfectnip.github.io');
-  return PROXY_BASE+encodeURIComponent(proxiedUrl);
+  return PROXY_USAGE_WORKER+'/?url='+encodeURIComponent(proxiedUrl)+'&__jqrg='+encodeURIComponent(attributionToken);
 }
 function requestProxySession(targetUrl){
   var token='';
-  try{var a=JSON.parse(localStorage.getItem('__jqrg_auth_v1')||'{}');token=a.token||''}catch(_){}
-  if(!token&&window.JqrgCloud&&window.JqrgCloud.getToken) token=window.JqrgCloud.getToken()||'';
+  if(window.JqrgCloud&&window.JqrgCloud.getToken) token=window.JqrgCloud.getToken()||'';
   if(!token) return Promise.reject(new Error('Sign in to use proxied apps.'));
   return fetch(PROXY_WORKER+'/v1/proxy-session',{
     method:'POST',
@@ -3605,13 +3609,19 @@ function requestProxySession(targetUrl){
   }).then(function(r){return r.json()}).then(function(d){
     if(d.error) throw new Error(d.error);
     if(!d.session_id) throw new Error('No session ID returned');
-    return d.session_id;
+    if(!d.attribution_token) throw new Error('Proxy usage tracking is not configured');
+    return d.attribution_token;
   });
 }
 function _openProxiedApp(targetUrl){
   var url=String(targetUrl||'');
   if(!/^https?:\/\//i.test(url)){url=url.charAt(0)==='/'?window.location.origin+url:'https://'+url;}
-  window.open(PROXY_BASE+encodeURIComponent(url),'_blank','noopener');
+  var open=function(proxyUrl){window.open(proxyUrl,'_blank','noopener');};
+  requestProxySession(url).then(function(attributionToken){
+    open(proxyUrlWithSession(attributionToken,url,false));
+  }).catch(function(){
+    open(PROXY_BASE+encodeURIComponent(url));
+  });
 }
 
 // Search engines used when the user types something that's not a URL into
@@ -4269,11 +4279,7 @@ function _tH(g,imgBase,query){
   var src=imgBase?imgBase:_('L2dhbWUtaW1hZ2VzL2dhbWVzLw==')+g.img+'.png';
   var escaped=g.url.replace(/'/g,"\\'");
   var onclick;
-  if(g.wo){
-    onclick="window.open('"+escaped+"','_blank')";
-  }else{
-    onclick="openGame('"+escaped+"')";
-  }
+  onclick="_openCatalogGame('"+escaped+"',"+(g.wo?'true':'false')+")";
   var label=(query&&query.length)?highlightMatch(g.n,query):_t(g.n);
   return '<div class="t-g" onclick="'+onclick+'">'+
     '<div class="skeleton skeleton-tile"></div>'+
@@ -4530,14 +4536,18 @@ function renderSearchFilterMenu(){
   var keys=Object.keys(_TF);
   for(var i=0;i<keys.length;i++){
     var checked=pendingTagFilters.indexOf(keys[i])!==-1;
-    html+='<div class="filter-check-row'+(checked?' selected':'')+'" onclick="toggleTagFilter(\''+keys[i]+'\')">';
+    html+='<div class="filter-check-row'+(checked?' selected':'')+'" onclick="toggleTagFilter(\''+keys[i]+'\',event)">';
     html+='<span>'+_t(_TF[keys[i]])+'</span>';
     html+='<div class="filter-toggle'+(checked?' active':'')+'"></div></div>';
   }
   html+='</div><div class="search-filter-footer"><button type="button" class="filter-cancel-btn" onclick="cancelTagFilters()">Cancel</button><button type="button" class="filter-confirm-btn" onclick="confirmTagFilters()">Confirm</button></div>';
   menu.innerHTML=html;
 }
-function toggleTagFilter(tag){
+function toggleTagFilter(tag,e){
+  // The row is replaced below, which detaches the click target before the
+  // document-level outside-click handler runs. Stop propagation first so the
+  // filter stays open while the user chooses options.
+  if(e) e.stopPropagation();
   var idx=pendingTagFilters.indexOf(tag);
   if(idx===-1) pendingTagFilters.push(tag);
   else pendingTagFilters.splice(idx,1);
@@ -4645,15 +4655,14 @@ function filterApps(){_rA();updateUrl()}
 function _rU(){
   var c=document.getElementById('unblocks-container');
   var html='<div class="section-title">'+_t(_('VW5ibG9ja3M='))+'</div><div class="unblocks-grid">';
-  var authData;
-  try{authData=JSON.parse(localStorage.getItem('__jqrg_auth_v1')||'{}')}catch(_){authData={}}
+  var authData=window.JqrgCloud&&window.JqrgCloud.getUser?window.JqrgCloud.getUser():null;
   _D4.forEach(function(u){
     var escaped=u.url.replace(/'/g,"\\'");
     var isDev=!!u.dev;
     var authed=_iA();
     var locked=(isDev||u.paywall)&&!authed;
     var paywall=u.paywall&&authed;
-    var isOwner=authed&&authData&&authData.user==='jimmyqrg';
+    var isOwner=authed&&authData&&authData.username==='jimmyqrg';
     var showPremium=paywall&&!isOwner;
     var onclick;
     if(locked){
@@ -5196,21 +5205,21 @@ function openPrivacyPolicy(){
   body.innerHTML=
     '<div style="line-height:1.8;font-size:13px;opacity:.9;max-height:60vh;overflow-y:auto;padding-right:8px">'+
       '<h3 style="margin-bottom:8px">PRIVACY POLICY</h3>'+
-      '<p style="opacity:.6;margin-bottom:12px">Last updated April 21, 2026</p>'+
+      '<p style="opacity:.6;margin-bottom:12px">Last updated September 23, 2026</p>'+
       '<p>This Privacy Notice for '+_t(_('SmltbXlRcmc='))+' (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;), describes how and why we might access, collect, store, use, and/or share (&ldquo;process&rdquo;) your personal information when you use our services (&ldquo;Services&rdquo;), including when you:</p>'+
       '<ul style="padding-left:20px;margin:8px 0"><li>Visit our website, or any website of ours that links to this Privacy Notice</li><li>Use interactive demos, tools, or access embedded content through our iframe viewer</li><li>Engage with us in other related ways, including any sales, marketing, or events</li></ul>'+
       '<p>Questions or concerns? Reading this Privacy Notice will help you understand your privacy rights and choices. We are responsible for making decisions about how your personal information is processed. If you do not agree with our policies and practices, please do not use our Services.</p>'+
       '<h4 style="margin-top:16px">SUMMARY OF KEY POINTS</h4>'+
-      '<p><strong>What personal information do we process?</strong> We ourselves do not run any backend server that logs your activity. Our Services run entirely in your browser and may store preferences (such as language, theme, favorites, auto-clicker configuration, and announcement state) locally in your browser&rsquo;s <em>localStorage</em>. We do not create accounts, track identity, or send this data anywhere.</p>'+
-      '<p><strong>Do we process any sensitive personal information?</strong> No. We never ask for, collect, or process sensitive personal information (such as passwords, payment details, or government IDs). You should never enter sensitive information into any embedded demo, app, or proxy tile, as those load third-party content outside of our control.</p>'+
-      '<p><strong>Do we collect any information from third parties?</strong> No. We do not collect, buy, or receive any information about you from third parties.</p>'+
-      '<p><strong>How do we process your information?</strong> Any information you configure (favorites, settings, cloaks, etc.) is processed locally on your device to personalize your experience. It is never transmitted to us or to any third party by us.</p>'+
+      '<p><strong>What personal information do we process?</strong> The site provides accounts for sign-in and account features. When you sign in or register, your username, email address, and password are sent over HTTPS to our account service at <em>discord.jimmyqrg.com</em> for authentication. The site keeps the resulting bearer token and account details in page memory only; it removes legacy credentials from browser storage. A server-managed session cookie may be used to restore your sign-in.</p>'+
+      '<p><strong>What account data is synced?</strong> When you are signed in, supported game saves and chat history are sent to and stored by our account service. These values are kept in page memory while you use the site and are not saved in this site\'s localStorage or IndexedDB. If you are signed out, or the service cannot sync, progress may be lost when you leave or reload the page. Do not use this service for passwords, payment details, government IDs, or other highly sensitive information.</p>'+
+      '<p><strong>Do we collect information from third parties?</strong> The account service receives the information needed to authenticate your account and sync the data described above. We do not buy personal information from data brokers.</p>'+
+      '<p><strong>How do we process your information?</strong> Site preferences such as theme, favorites, and cloak settings are stored in this browser. Supported game saves and chat history are held only in page memory while in use and transmitted to our account service when signed in. Third-party games and embedded services may use their own storage and network requests on their own origins.</p>'+
       '<p><strong>Third-party content and embedded services.</strong> Our Services embed third-party interactive demos, web applications, and proxy services (including, but not limited to, <em>ulw-app.fly.dev</em>, <em>noblock.jimmyqrg.com</em>, and various hosted content origins) inside iframes. When you launch any tile, your browser connects directly to that third-party origin. Those third parties and the SDKs they use (such as Unity, Construct, createjs, howler, and similar) may collect usage data, set cookies, or process input you provide, according to their own privacy practices. We do not control and are not responsible for the privacy practices of any third-party content. Please review the privacy policy of each provider before using their content.</p>'+
       '<p><strong>Proxied / unblocker traffic.</strong> Tiles that load through a proxy (for example apps like TikTok, YouTube, GitHub, Twitch, Instagram, Deepseek, and Bloxd.io) route your request through a third-party proxy such as <em>ulw-app.fly.dev</em>. The proxy operator, the destination site, and any network along the way may observe your traffic. Do not log in, enter passwords, or share personal data through these proxies.</p>'+
-      '<p><strong>In what situations and with which parties do we share personal information?</strong> We do not share personal information because we do not collect any. However, when you open embedded content, your browser makes normal network requests (IP address, user agent, referrer, etc.) to that third-party origin, which is inherent to how the web works.</p>'+
-      '<p><strong>How do we keep your information safe?</strong> Because all of your preferences remain on your device, the main safeguard is your own browser. No electronic transmission over the internet or information storage technology can be guaranteed to be 100% secure.</p>'+
-      '<p><strong>What are your rights?</strong> Depending on where you are located geographically, applicable privacy law may give you certain rights regarding your personal information. Because we do not hold any personal information about you, most requests should be directed to the specific third-party service you have used.</p>'+
-      '<p><strong>How do you exercise your rights?</strong> To clear data we have stored locally, use your browser&rsquo;s &ldquo;Clear site data&rdquo; option or the in-app reset tools. For data held by a third-party service, contact that provider directly.</p>'+
+      '<p><strong>In what situations and with which parties do we share personal information?</strong> Account and sync data is sent to our account service. Proxy requests are sent through the proxy provider, which can observe the requested destination and traffic. When you open other embedded content, your browser sends normal network request data (such as IP address, user agent, and referrer) to that provider.</p>'+
+      '<p><strong>How do we keep your information safe?</strong> Account bearer tokens are held in page memory rather than browser web storage, and same-origin game pages run in an isolated sandbox. Data sent over the network depends on the security of the relevant provider and connection. No electronic transmission over the internet or information storage technology can be guaranteed to be 100% secure.</p>'+
+      '<p><strong>What are your rights?</strong> Depending on where you live, applicable privacy law may give you rights regarding account and synced data, including access, correction, or deletion.</p>'+
+      '<p><strong>How do you exercise your rights?</strong> Use the account settings and data deletion tools on this site, or contact us through the support link. For data held by a third-party provider, contact that provider directly.</p>'+
       '<div style="margin-top:16px"><button class="setting-btn" onclick="openSettings()">Back to Settings</button></div>'+
     '</div>';
   modal.classList.add('open');
@@ -5507,7 +5516,7 @@ function renderHomeSpotlight(force){
   // tells the visitor which game the button plays — keep the visible
   // text short and put the game name in `aria-label` for screen readers.
   var ariaPlain=String(pick.n||'').replace(/"/g,'&quot;');
-  var openCmd=pick.wo?"window.open('"+safeUrl+"','_blank')":"openGame('"+safeUrl+"')";
+  var openCmd="_openCatalogGame('"+safeUrl+"',"+(pick.wo?'true':'false')+")";
   c.innerHTML=
     '<div class="home-spotlight-art" style="background-image:linear-gradient(135deg,rgba(36,16,62,.4),rgba(20,10,38,.7)),url(\''+img+'\')"></div>'+
     '<div class="home-spotlight-overlay"></div>'+
@@ -5531,8 +5540,7 @@ function renderHomeSpotlight(force){
       '</div>'+
     '</div>';
   c.onclick=function(){
-    if(pick.wo){ window.open(pick.url,'_blank'); }
-    else if(typeof openGame==='function'){ openGame(pick.url); }
+    _openCatalogGame(pick.url,!!pick.wo);
   };
 }
 
@@ -5543,9 +5551,7 @@ function renderHomeSpotlight(force){
 function _bH(g){
   var src=_('L2dhbWUtaW1hZ2VzL2dhbWVzLw==')+g.img+'.png';
   var escaped=String(g.url||'').replace(/'/g,"\\'");
-  var onclick=g.wo
-    ? "window.open('"+escaped+"','_blank')"
-    : "openGame('"+escaped+"')";
+  var onclick="_openCatalogGame('"+escaped+"',"+(g.wo?'true':'false')+")";
   var label=_t(g.n);
   return '<div class="home-banner-tile" onclick="'+onclick+'" tabindex="0" role="button" aria-label="Play '+label.replace(/"/g,'&quot;')+'">'+
     '<div class="skeleton skeleton-tile"></div>'+
@@ -5703,8 +5709,7 @@ function _pR(){
      could only identify it by recognizing the gameplay. The toast
      answers that "what am I playing?" question immediately. */
   _sRT(pick.n);
-  if(pick.wo){window.open(pick.url,'_blank');return}
-  if(typeof openGame==='function') openGame(pick.url,'games');
+  _openCatalogGame(pick.url,!!pick.wo);
 }
 function randomizeModalAnim(){
   var obs=new MutationObserver(function(mutations){
@@ -5753,6 +5758,15 @@ function _lP(url,sourcePage){
   if(_lPTimer){clearTimeout(_lPTimer);_lPTimer=null}
   var absUrl=(url.startsWith('http')||url.startsWith('//'))?url:new URL(url,window.location.origin).href;
 
+  // Same-origin game pages must not inherit the site's origin or storage.
+  // The external proxy viewer keeps its own origin so its service worker works.
+  try{
+    var frameOrigin=new URL(absUrl).origin;
+    var frameSandbox='allow-scripts allow-forms allow-pointer-lock allow-downloads allow-modals';
+    if(frameOrigin!==window.location.origin) frameSandbox+=' allow-same-origin';
+    _goFrame.setAttribute('sandbox',frameSandbox);
+  }catch(_){_goFrame.setAttribute('sandbox','allow-scripts allow-forms allow-pointer-lock allow-downloads allow-modals')}
+
   var _lPBlocked = false;
 
   function doProxy(u){try{_goFrame.src=u}catch(_){}}
@@ -5761,7 +5775,11 @@ function _lP(url,sourcePage){
     if(_lPRetried) return;
     _lPRetried=true;
     var pu=absUrl.replace('jimmyqrg.github.io','perfectnip.github.io');
-    doProxy('https://ulw-app.fly.dev/launcher.html?raw=true&adblock=true&url='+encodeURIComponent(pu));
+    requestProxySession(pu).then(function(attributionToken){
+      doProxy(proxyUrlWithSession(attributionToken,pu,false));
+    }).catch(function(){
+      doProxy('https://ulw-app.fly.dev/launcher.html?raw=true&adblock=true&url='+encodeURIComponent(pu));
+    });
   }
 
   function tryAbs(){
@@ -5870,7 +5888,10 @@ function openAboutBlank(){
   if(!url) return;
   var w=window.open('about:blank','_blank');
   if(w){
-    w.document.write('<html><head><title>Loading...</title></head><body style="margin:0;overflow:hidden"><iframe src="'+url+'" style="width:100%;height:100%;border:0" allowfullscreen></iframe></body></html>');
+    var sameOrigin=false;
+    try{sameOrigin=new URL(url).origin===window.location.origin}catch(_){}
+    var sandbox='allow-scripts allow-forms allow-pointer-lock allow-downloads allow-modals'+(sameOrigin?'':' allow-same-origin');
+    w.document.write('<html><head><title>Loading...</title></head><body style="margin:0;overflow:hidden"><iframe src="'+url+'" sandbox="'+sandbox+'" style="width:100%;height:100%;border:0" allowfullscreen></iframe></body></html>');
     w.document.close();
   }
 }
