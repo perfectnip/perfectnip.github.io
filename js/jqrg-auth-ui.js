@@ -1945,6 +1945,9 @@
 
   function syncModalRequired() {
     if (!modalEl) return;
+    // Session restoration can finish after the startup gate opens. Once the
+    // saved session is valid, an account modal must never remain locked.
+    if (modalRequired && Cloud.isLoggedIn()) modalRequired = false;
     modalEl.classList.toggle('required', modalRequired);
     var close = modalEl.querySelector('.jqrg-auth-close');
     if (close) {
@@ -1983,6 +1986,9 @@
 
   Cloud.onAuthChange(function () {
     refreshButton();
+    // jqrg-cloud may restore a saved session after maybeGate() has already
+    // opened the required sign-in modal. Clear that gate as soon as auth lands.
+    if (Cloud.isLoggedIn()) onSignedIn();
     if (modalEl) {
       var head = modalEl.querySelector('.jqrg-auth-title');
       if (head) head.textContent = Cloud.isLoggedIn() ? 'Your account' : (modalRequired ? 'Sign in to continue' : 'Sign in');
